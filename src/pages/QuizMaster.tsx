@@ -4,7 +4,7 @@ import type { Quiz } from '../types';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { QuestionCard } from '../components/QuestionCard';
-import { getQuizMaster, updateQuizStatus } from '../services/api';
+import { getQuizMaster, updateQuizStatus, updateCurrentQuestion } from '../services/api';
 import { ApiError } from '../services/api';
 import './QuizMaster.css';
 
@@ -35,6 +35,8 @@ export function QuizMaster() {
     try {
       const quizData = await getQuizMaster(code);
       setQuiz(quizData);
+      // Sync local state with server state
+      setCurrentQuestionIndex(quizData.current_question_index);
       setError('');
     } catch (err) {
       if (err instanceof ApiError) {
@@ -73,15 +75,33 @@ export function QuizMaster() {
     }
   };
 
-  const handleNextQuestion = () => {
-    if (quiz && currentQuestionIndex < quiz.questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
+  const handleNextQuestion = async () => {
+    if (!code || !quiz || currentQuestionIndex >= quiz.questions.length - 1) {
+      return;
+    }
+
+    const newIndex = currentQuestionIndex + 1;
+    setCurrentQuestionIndex(newIndex);
+
+    try {
+      await updateCurrentQuestion(code, newIndex);
+    } catch (err) {
+      setError('Fehler beim Aktualisieren der Frage');
     }
   };
 
-  const handlePrevQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1);
+  const handlePrevQuestion = async () => {
+    if (!code || currentQuestionIndex <= 0) {
+      return;
+    }
+
+    const newIndex = currentQuestionIndex - 1;
+    setCurrentQuestionIndex(newIndex);
+
+    try {
+      await updateCurrentQuestion(code, newIndex);
+    } catch (err) {
+      setError('Fehler beim Aktualisieren der Frage');
     }
   };
 

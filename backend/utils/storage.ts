@@ -92,6 +92,21 @@ export async function quizExists(code: string): Promise<boolean> {
   }
 }
 
+export async function updateCurrentQuestion(code: string, questionIndex: number): Promise<void> {
+  try {
+    const quiz = await loadQuiz(code);
+    if (!quiz) {
+      throw new Error(`Quiz ${code} not found`);
+    }
+
+    quiz.current_question_index = questionIndex;
+    await saveQuiz(quiz);
+  } catch (error) {
+    console.error(`Failed to update current question for quiz ${code}:`, error);
+    throw error;
+  }
+}
+
 // Team operations
 export async function saveTeam(team: Team): Promise<void> {
   try {

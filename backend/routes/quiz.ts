@@ -14,6 +14,7 @@ import {
   loadQuiz,
   getAllQuizzes,
   updateQuizStatus,
+  updateCurrentQuestion,
   quizExists,
   getTeamsByQuizCode,
 } from '../utils/storage';
@@ -67,6 +68,7 @@ router.post('/create', async (req: Request, res: Response) => {
       title: title.trim(),
       questions: questionsWithIds,
       status: 'draft',
+      current_question_index: 0,
       created_at: new Date().toISOString(),
     };
 
@@ -117,6 +119,7 @@ router.get('/:code', async (req: Request, res: Response) => {
         code: quiz.code,
         title: quiz.title,
         status: quiz.status,
+        current_question_index: quiz.current_question_index,
         created_at: quiz.created_at,
         questions: questionsWithoutAnswers,
       },
@@ -249,6 +252,57 @@ router.patch('/:code/status', async (req: Request, res: Response) => {
     res.status(500).json({
       error: 'Internal Server Error',
       message: 'Failed to update quiz status',
+    } as ErrorResponse);
+  }
+});
+
+// PATCH /api/quiz/:code/question - Update current question index
+router.patch('/:code/question', async (req: Request, res: Response) => {
+  try {
+    const code = req.params.code as string;
+    const { questionIndex } = req.body as { questionIndex: number };
+
+    if (!validateQuizCode(code)) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Invalid quiz code format',
+      } as ErrorResponse);
+    }
+
+    if (typeof questionIndex !== 'number' || questionIndex < 0) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Invalid question index',
+      } as ErrorResponse);
+    }
+
+    const quiz = await loadQuiz(code);
+
+    if (!quiz) {
+      return res.status(404).json({
+        error: 'Not Found',
+        message: 'Quiz not found',
+      } as ErrorResponse);
+    }
+
+    if (questionIndex >= quiz.questions.length) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Question index out of range',
+      } as ErrorResponse);
+    }
+
+    await updateCurrentQuestion(code, questionIndex);
+
+    res.json({
+      message: 'Current question updated successfully',
+      questionIndex,
+    });
+  } catch (error) {
+    console.error('Error updating current question:', error);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'Failed to update current question',
     } as ErrorResponse);
   }
 });

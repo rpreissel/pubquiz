@@ -61,6 +61,16 @@ export async function updateQuizStatus(
   await handleResponse(response);
 }
 
+export async function updateCurrentQuestion(code: string, questionIndex: number): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/quiz/${code}/question`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ questionIndex }),
+  });
+
+  await handleResponse(response);
+}
+
 export async function getQuizResults(code: string): Promise<{ quiz: Quiz; teams: Team[] }> {
   const response = await fetch(`${API_BASE_URL}/quiz/${code}/results`);
   return handleResponse(response);

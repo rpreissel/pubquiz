@@ -15,7 +15,6 @@ export function TeamQuiz() {
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [team, setTeam] = useState<Team | null>(null);
   const [selectedOption, setSelectedOption] = useState<number | undefined>(undefined);
-  const [currentQuestionIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -39,6 +38,7 @@ export function TeamQuiz() {
   useEffect(() => {
     // Load existing answer for current question
     if (team && quiz) {
+      const currentQuestionIndex = quiz.current_question_index;
       const existingAnswer = team.answers.find(
         (a) => a.question_id === quiz.questions[currentQuestionIndex]?.id,
       );
@@ -48,7 +48,7 @@ export function TeamQuiz() {
         setSelectedOption(undefined);
       }
     }
-  }, [currentQuestionIndex, team, quiz]);
+  }, [team, quiz]);
 
   const loadData = async () => {
     if (!code || !teamId) {
@@ -77,6 +77,7 @@ export function TeamQuiz() {
       return;
     }
 
+    const currentQuestionIndex = quiz.current_question_index;
     const currentQuestion = quiz.questions[currentQuestionIndex];
     if (!currentQuestion) {
       return;
@@ -173,6 +174,7 @@ export function TeamQuiz() {
     );
   }
 
+  const currentQuestionIndex = quiz.current_question_index;
   const currentQuestion = quiz.questions[currentQuestionIndex];
   const hasAnswered = team.answers.some((a) => a.question_id === currentQuestion.id);
 

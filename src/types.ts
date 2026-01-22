@@ -11,6 +11,7 @@ export interface Quiz {
   title: string;
   questions: Question[];
   status: 'draft' | 'active' | 'finished';
+  current_question_index: number;
   created_at: string;
 }
 
