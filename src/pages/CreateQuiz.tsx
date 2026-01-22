@@ -149,17 +149,10 @@ export function CreateQuiz() {
                       ✕
                     </button>
                   </div>
-                  <div className="question-preview-options">
-                    {question.options.map((opt, i) => (
-                      <div
-                        key={i}
-                        className={`preview-option ${i === question.correct ? 'preview-option--correct' : ''}`}
-                      >
-                        <span className="preview-option-label">{String.fromCharCode(65 + i)}</span>
-                        {opt}
-                        {i === question.correct && <span className="correct-badge">✓</span>}
-                      </div>
-                    ))}
+                  <div className="question-preview-content">
+                    <div className="correct-answer-preview">
+                      <strong>Korrekte Antwort:</strong> {question.correct}
+                    </div>
                   </div>
                 </Card>
               ))}

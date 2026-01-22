@@ -14,7 +14,6 @@ export function TeamQuiz() {
   const navigate = useNavigate();
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [team, setTeam] = useState<Team | null>(null);
-  const [selectedOption, setSelectedOption] = useState<number | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -34,21 +33,6 @@ export function TeamQuiz() {
     const interval = setInterval(loadData, 5000);
     return () => clearInterval(interval);
   }, [code, teamId]);
-
-  useEffect(() => {
-    // Load existing answer for current question
-    if (team && quiz) {
-      const currentQuestionIndex = quiz.current_question_index;
-      const existingAnswer = team.answers.find(
-        (a) => a.question_id === quiz.questions[currentQuestionIndex]?.id,
-      );
-      if (existingAnswer) {
-        setSelectedOption(existingAnswer.selected_option);
-      } else {
-        setSelectedOption(undefined);
-      }
-    }
-  }, [team, quiz]);
 
   const loadData = async () => {
     if (!code || !teamId) {
@@ -72,8 +56,8 @@ export function TeamQuiz() {
     }
   };
 
-  const handleSubmitAnswer = async () => {
-    if (!code || !teamId || !quiz || selectedOption === undefined) {
+  const handleSubmitAnswer = async (answer: string) => {
+    if (!code || !teamId || !quiz) {
       return;
     }
 
@@ -86,7 +70,7 @@ export function TeamQuiz() {
     setSubmitting(true);
 
     try {
-      await submitAnswer(teamId, code, currentQuestion.id, selectedOption);
+      await submitAnswer(teamId, code, currentQuestion.id, answer);
       await loadData();
       setError('');
     } catch (err) {
@@ -122,7 +106,7 @@ export function TeamQuiz() {
       <div className="team-quiz">
         <Card>
           <div className="error-state">
-            <h2>❌ Fehler</h2>
+            <h2>Fehler</h2>
             <p>{error || 'Quiz oder Team nicht gefunden'}</p>
             <Button onClick={handleLeaveQuiz}>Zur Startseite</Button>
           </div>
@@ -136,7 +120,7 @@ export function TeamQuiz() {
     return (
       <div className="team-quiz">
         <Card className="finished-card">
-          <h2 className="finished-title">🎉 Quiz beendet!</h2>
+          <h2 className="finished-title">Quiz beendet!</h2>
           <p className="finished-text">
             Danke fürs Mitspielen, <strong>{team.name}</strong>!
           </p>
@@ -161,7 +145,7 @@ export function TeamQuiz() {
     return (
       <div className="team-quiz">
         <Card className="waiting-card">
-          <h2 className="waiting-title">⏳ Warte auf Quiz-Start...</h2>
+          <h2 className="waiting-title">Warte auf Quiz-Start...</h2>
           <p className="waiting-text">
             Willkommen, <strong>{team.name}</strong>!
           </p>
@@ -176,7 +160,8 @@ export function TeamQuiz() {
 
   const currentQuestionIndex = quiz.current_question_index;
   const currentQuestion = quiz.questions[currentQuestionIndex];
-  const hasAnswered = team.answers.some((a) => a.question_id === currentQuestion.id);
+  const existingAnswer = team.answers.find((a) => a.question_id === currentQuestion.id);
+  const hasAnswered = !!existingAnswer;
 
   return (
     <div className="team-quiz">
@@ -209,9 +194,9 @@ export function TeamQuiz() {
 
       <QuestionCard
         question={currentQuestion}
-        selectedOption={selectedOption}
-        onSelectOption={hasAnswered ? undefined : setSelectedOption}
-        disabled={hasAnswered}
+        answer={existingAnswer?.answer}
+        onSubmitAnswer={hasAnswered ? undefined : handleSubmitAnswer}
+        disabled={hasAnswered || submitting}
       />
 
       {error && (
@@ -220,30 +205,14 @@ export function TeamQuiz() {
         </Card>
       )}
 
-      <Card className="answer-actions">
-        {hasAnswered ? (
+      {hasAnswered && (
+        <Card className="answer-actions">
           <div className="answered-notice">
-            <p>✅ Antwort wurde gespeichert</p>
+            <p>Antwort wurde gespeichert</p>
             <p className="waiting-text">Warte auf die nächste Frage vom Quiz Master...</p>
           </div>
-        ) : (
-          <>
-            <Button
-              onClick={handleSubmitAnswer}
-              disabled={selectedOption === undefined || submitting}
-              size="large"
-              fullWidth
-            >
-              {submitting ? 'Wird gespeichert...' : 'Antwort speichern'}
-            </Button>
-            {selectedOption !== undefined && (
-              <p className="hint-text">
-                Du hast Option {String.fromCharCode(65 + selectedOption)} gewählt
-              </p>
-            )}
-          </>
-        )}
-      </Card>
+        </Card>
+      )}
     </div>
   );
 }

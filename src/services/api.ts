@@ -93,7 +93,7 @@ export async function submitAnswer(
   teamId: string,
   quizCode: string,
   questionId: number,
-  selectedOption: number,
+  answer: string,
 ): Promise<{ answer: Answer; total_score: number }> {
   const response = await fetch(`${API_BASE_URL}/team/${teamId}/answer`, {
     method: 'POST',
@@ -101,7 +101,7 @@ export async function submitAnswer(
     body: JSON.stringify({
       quiz_code: quizCode,
       question_id: questionId,
-      selected_option: selectedOption,
+      answer,
     }),
   });
 

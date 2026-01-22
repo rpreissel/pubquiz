@@ -19,15 +19,8 @@ export function QuestionForm({
   editMode = false,
 }: QuestionFormProps) {
   const [questionText, setQuestionText] = useState(initialData?.text || '');
-  const [options, setOptions] = useState<string[]>(initialData?.options || ['', '', '', '']);
-  const [correctIndex, setCorrectIndex] = useState<number>(initialData?.correct ?? -1);
+  const [correctAnswer, setCorrectAnswer] = useState(initialData?.correct || '');
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-
-  const handleOptionChange = (index: number, value: string) => {
-    const newOptions = [...options];
-    newOptions[index] = value;
-    setOptions(newOptions);
-  };
 
   const validate = (): boolean => {
     const newErrors: { [key: string]: string } = {};
@@ -36,15 +29,8 @@ export function QuestionForm({
       newErrors.question = 'Frage darf nicht leer sein';
     }
 
-    options.forEach((opt, index) => {
-      if (!opt.trim()) {
-        newErrors[`option${index}`] =
-          `Option ${String.fromCharCode(65 + index)} darf nicht leer sein`;
-      }
-    });
-
-    if (correctIndex === -1) {
-      newErrors.correct = 'Bitte markiere die korrekte Antwort';
+    if (!correctAnswer.trim()) {
+      newErrors.correct = 'Korrekte Antwort darf nicht leer sein';
     }
 
     setErrors(newErrors);
@@ -60,20 +46,16 @@ export function QuestionForm({
 
     onAddQuestion({
       text: questionText.trim(),
-      options: options.map((opt) => opt.trim()),
-      correct: correctIndex,
+      correct: correctAnswer.trim(),
     });
 
     // Reset form if not in edit mode
     if (!editMode) {
       setQuestionText('');
-      setOptions(['', '', '', '']);
-      setCorrectIndex(-1);
+      setCorrectAnswer('');
       setErrors({});
     }
   };
-
-  const optionLabels = ['A', 'B', 'C', 'D'];
 
   return (
     <Card className="question-form">
@@ -86,34 +68,19 @@ export function QuestionForm({
           label="Frage"
           value={questionText}
           onChange={(e) => setQuestionText(e.target.value)}
-          placeholder="z.B. Welche Farbe ist der Himmel?"
+          placeholder="z.B. Welche Farbe hat der Himmel?"
           error={errors.question}
           fullWidth
         />
 
-        <div className="options-section">
-          <label className="section-label">Antwortoptionen</label>
-          {options.map((option, index) => (
-            <div key={index} className="option-row">
-              <Input
-                value={option}
-                onChange={(e) => handleOptionChange(index, e.target.value)}
-                placeholder={`Option ${optionLabels[index]}`}
-                error={errors[`option${index}`]}
-                fullWidth
-              />
-              <button
-                type="button"
-                className={`correct-marker ${correctIndex === index ? 'correct-marker--active' : ''}`}
-                onClick={() => setCorrectIndex(index)}
-                title="Als korrekte Antwort markieren"
-              >
-                {correctIndex === index ? '✓' : '○'}
-              </button>
-            </div>
-          ))}
-          {errors.correct && <span className="input-error">{errors.correct}</span>}
-        </div>
+        <Input
+          label="Korrekte Antwort"
+          value={correctAnswer}
+          onChange={(e) => setCorrectAnswer(e.target.value)}
+          placeholder="z.B. Blau"
+          error={errors.correct}
+          fullWidth
+        />
 
         <div className="form-actions">
           <Button type="submit" fullWidth>

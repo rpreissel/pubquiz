@@ -2,8 +2,7 @@
 export interface Question {
   id: number;
   text: string;
-  options: string[];
-  correct: number;
+  correct: string;
 }
 
 export interface Quiz {
@@ -18,7 +17,7 @@ export interface Quiz {
 // Team type definitions
 export interface Answer {
   question_id: number;
-  selected_option: number;
+  answer: string;
   is_correct: boolean;
 }
 

@@ -16,7 +16,7 @@ import {
   updateTeamAnswer,
   getTeamsByQuizCode,
 } from '../utils/storage';
-import { validateTeamName, validateAnswerSubmission } from '../utils/validation';
+import { validateTeamName } from '../utils/validation';
 
 const router = express.Router();
 
@@ -94,13 +94,20 @@ router.post('/join', async (req: Request, res: Response) => {
 router.post('/:teamId/answer', async (req: Request, res: Response) => {
   try {
     const teamId = req.params.teamId as string;
-    const { question_id, selected_option } = req.body as SubmitAnswerRequest;
+    const { question_id, answer: answerText } = req.body as SubmitAnswerRequest;
 
     // Validate input types
-    if (typeof question_id !== 'number' || typeof selected_option !== 'number') {
+    if (typeof question_id !== 'number' || typeof answerText !== 'string') {
       return res.status(400).json({
         error: 'Validation Error',
         message: 'Invalid input format',
+      } as ErrorResponse);
+    }
+
+    if (!answerText.trim()) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Answer cannot be empty',
       } as ErrorResponse);
     }
 
@@ -156,28 +163,13 @@ router.post('/:teamId/answer', async (req: Request, res: Response) => {
       } as ErrorResponse);
     }
 
-    // Validate answer
-    const answerValidation = validateAnswerSubmission(
-      question_id,
-      selected_option,
-      quiz.questions.length,
-      question.options.length,
-    );
-
-    if (!answerValidation.valid) {
-      return res.status(400).json({
-        error: 'Validation Error',
-        message: answerValidation.error,
-      } as ErrorResponse);
-    }
-
-    // Check if answer is correct
-    const isCorrect = question.correct === selected_option;
+    // Check if answer is correct (case-insensitive comparison)
+    const isCorrect = question.correct.toLowerCase().trim() === answerText.toLowerCase().trim();
 
     // Create answer object
     const answer: Answer = {
       question_id,
-      selected_option,
+      answer: answerText.trim(),
       is_correct: isCorrect,
     };
 

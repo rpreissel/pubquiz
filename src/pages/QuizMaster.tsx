@@ -220,10 +220,7 @@ export function QuizMaster() {
             <h3>Quiz Master Ansicht</h3>
             <div className="correct-answer-info">
               <strong>Korrekte Antwort:</strong>{' '}
-              <span className="correct-answer-text">
-                {String.fromCharCode(65 + currentQuestion.correct)} -{' '}
-                {currentQuestion.options[currentQuestion.correct]}
-              </span>
+              <span className="correct-answer-text">{currentQuestion.correct}</span>
             </div>
           </Card>
 

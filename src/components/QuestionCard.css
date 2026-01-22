@@ -10,83 +10,54 @@
   color: #111827;
 }
 
-.question-options {
+.answer-form {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-.question-option {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+.answer-display {
   padding: 1rem 1.25rem;
   border: 2px solid #e5e7eb;
   border-radius: 8px;
   background: white;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-align: left;
-  font-family: inherit;
-  font-size: 1rem;
 }
 
-.question-option:hover:not(:disabled) {
-  border-color: #3b82f6;
-  background-color: #eff6ff;
-}
-
-.question-option--selected {
-  border-color: #3b82f6;
-  background-color: #dbeafe;
-}
-
-.question-option--correct {
+.answer-display--correct {
   border-color: #10b981;
   background-color: #d1fae5;
 }
 
-.question-option--wrong {
+.answer-display--wrong {
   border-color: #ef4444;
   background-color: #fee2e2;
 }
 
-.question-option--disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
+.answer-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
 }
 
-.option-label {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 50%;
-  background-color: #f3f4f6;
-  font-weight: 700;
-  color: #374151;
-  flex-shrink: 0;
-}
-
-.question-option--selected .option-label {
-  background-color: #3b82f6;
-  color: white;
-}
-
-.question-option--correct .option-label {
-  background-color: #10b981;
-  color: white;
-}
-
-.question-option--wrong .option-label {
-  background-color: #ef4444;
-  color: white;
-}
-
-.option-text {
-  flex: 1;
+.answer-text {
+  display: block;
+  font-size: 1.125rem;
   color: #111827;
+}
+
+.correct-answer {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.waiting-text {
+  color: #6b7280;
+  font-style: italic;
+  text-align: center;
+  padding: 2rem;
 }
 
 @media (max-width: 640px) {
@@ -94,17 +65,11 @@
     font-size: 1.25rem;
   }
 
-  .question-option {
+  .answer-display {
     padding: 0.875rem 1rem;
   }
 
-  .option-label {
-    width: 1.75rem;
-    height: 1.75rem;
-    font-size: 0.875rem;
-  }
-
-  .option-text {
-    font-size: 0.9375rem;
+  .answer-text {
+    font-size: 1rem;
   }
 }

@@ -12,8 +12,6 @@ const QUIZ_TITLE_MIN_LENGTH = 1;
 const QUIZ_TITLE_MAX_LENGTH = 200;
 const MIN_QUESTIONS = 1;
 const MAX_QUESTIONS = 100;
-const MIN_OPTIONS = 2;
-const MAX_OPTIONS = 10;
 
 export function validateQuizCode(code: string): boolean {
   return QUIZ_CODE_REGEX.test(code);
@@ -106,49 +104,12 @@ export function validateQuestions(questions: Question[]): {
       return { valid: false, error: `Question ${i + 1}: Text cannot be empty` };
     }
 
-    if (!Array.isArray(question.options)) {
-      return { valid: false, error: `Question ${i + 1}: Options must be an array` };
+    if (!question.correct || typeof question.correct !== 'string') {
+      return { valid: false, error: `Question ${i + 1}: Correct answer is required` };
     }
 
-    if (question.options.length < MIN_OPTIONS) {
-      return {
-        valid: false,
-        error: `Question ${i + 1}: At least ${MIN_OPTIONS} options required`,
-      };
-    }
-
-    if (question.options.length > MAX_OPTIONS) {
-      return {
-        valid: false,
-        error: `Question ${i + 1}: Cannot exceed ${MAX_OPTIONS} options`,
-      };
-    }
-
-    for (let j = 0; j < question.options.length; j++) {
-      if (!question.options[j] || typeof question.options[j] !== 'string') {
-        return {
-          valid: false,
-          error: `Question ${i + 1}, Option ${j + 1}: Text is required`,
-        };
-      }
-
-      if (question.options[j].trim().length === 0) {
-        return {
-          valid: false,
-          error: `Question ${i + 1}, Option ${j + 1}: Text cannot be empty`,
-        };
-      }
-    }
-
-    if (
-      typeof question.correct !== 'number' ||
-      question.correct < 0 ||
-      question.correct >= question.options.length
-    ) {
-      return {
-        valid: false,
-        error: `Question ${i + 1}: Invalid correct answer index`,
-      };
+    if (question.correct.trim().length === 0) {
+      return { valid: false, error: `Question ${i + 1}: Correct answer cannot be empty` };
     }
   }
 
@@ -157,9 +118,8 @@ export function validateQuestions(questions: Question[]): {
 
 export function validateAnswerSubmission(
   questionId: number,
-  selectedOption: number,
+  answer: string,
   totalQuestions: number,
-  optionsCount: number,
 ): { valid: boolean; error?: string } {
   if (typeof questionId !== 'number' || questionId < 0) {
     return { valid: false, error: 'Invalid question ID' };
@@ -169,12 +129,8 @@ export function validateAnswerSubmission(
     return { valid: false, error: 'Question not found' };
   }
 
-  if (typeof selectedOption !== 'number' || selectedOption < 0) {
-    return { valid: false, error: 'Invalid selected option' };
-  }
-
-  if (selectedOption >= optionsCount) {
-    return { valid: false, error: 'Selected option does not exist' };
+  if (typeof answer !== 'string' || answer.trim().length === 0) {
+    return { valid: false, error: 'Answer cannot be empty' };
   }
 
   return { valid: true };

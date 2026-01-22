@@ -2,10 +2,6 @@ import type { Question } from '../types';
 
 export interface CSVQuestion {
   question: string;
-  optionA: string;
-  optionB: string;
-  optionC: string;
-  optionD: string;
   correct: string;
 }
 
@@ -19,13 +15,12 @@ export function parseCSV(csvText: string): Omit<Question, 'id'>[] {
   // Parse header
   const header = lines[0].split(',').map((h) => h.trim().toLowerCase());
 
-  const requiredColumns = ['question', 'optiona', 'optionb', 'optionc', 'optiond', 'correct'];
+  const requiredColumns = ['question', 'correct'];
   const missingColumns = requiredColumns.filter((col) => !header.includes(col));
 
   if (missingColumns.length > 0) {
     throw new Error(
-      `Fehlende Spalten: ${missingColumns.join(', ')}. ` +
-        `Erforderlich: question, optionA, optionB, optionC, optionD, correct`,
+      `Fehlende Spalten: ${missingColumns.join(', ')}. ` + `Erforderlich: question, correct`,
     );
   }
 
@@ -38,56 +33,32 @@ export function parseCSV(csvText: string): Omit<Question, 'id'>[] {
       continue; // Skip empty lines
     }
 
-    const values = line.split(',').map((v) => v.trim());
+    // Handle CSV with quoted values containing commas
+    const values = parseCSVLine(line);
 
     if (values.length < requiredColumns.length) {
       throw new Error(`Zeile ${i + 1}: Nicht genügend Spalten`);
     }
 
     const questionIndex = header.indexOf('question');
-    const optionAIndex = header.indexOf('optiona');
-    const optionBIndex = header.indexOf('optionb');
-    const optionCIndex = header.indexOf('optionc');
-    const optionDIndex = header.indexOf('optiond');
     const correctIndex = header.indexOf('correct');
 
     const question = values[questionIndex];
-    const options = [
-      values[optionAIndex],
-      values[optionBIndex],
-      values[optionCIndex],
-      values[optionDIndex],
-    ];
-    const correctValue = values[correctIndex].toUpperCase();
+    const correct = values[correctIndex];
 
     // Validate question
     if (!question) {
       throw new Error(`Zeile ${i + 1}: Frage darf nicht leer sein`);
     }
 
-    // Validate options
-    if (options.some((opt) => !opt)) {
-      throw new Error(`Zeile ${i + 1}: Alle Optionen müssen ausgefüllt sein`);
-    }
-
-    // Parse correct answer (A=0, B=1, C=2, D=3)
-    let correctIndex_: number;
-    if (correctValue === 'A' || correctValue === '0') {
-      correctIndex_ = 0;
-    } else if (correctValue === 'B' || correctValue === '1') {
-      correctIndex_ = 1;
-    } else if (correctValue === 'C' || correctValue === '2') {
-      correctIndex_ = 2;
-    } else if (correctValue === 'D' || correctValue === '3') {
-      correctIndex_ = 3;
-    } else {
-      throw new Error(`Zeile ${i + 1}: Korrekte Antwort muss A, B, C, D, 0, 1, 2 oder 3 sein`);
+    // Validate correct answer
+    if (!correct) {
+      throw new Error(`Zeile ${i + 1}: Korrekte Antwort darf nicht leer sein`);
     }
 
     questions.push({
       text: question,
-      options,
-      correct: correctIndex_,
+      correct: correct,
     });
   }
 
@@ -98,11 +69,35 @@ export function parseCSV(csvText: string): Omit<Question, 'id'>[] {
   return questions;
 }
 
+// Parse a single CSV line, handling quoted values
+function parseCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+
+  result.push(current.trim());
+  return result;
+}
+
 export function downloadCSVTemplate(): void {
   const template =
-    'question,optionA,optionB,optionC,optionD,correct\n' +
-    'Welche Farbe ist der Himmel?,Blau,Rot,Grün,Gelb,A\n' +
-    'Was ist 2+2?,3,4,5,6,B';
+    'question,correct\n' +
+    'Welche Farbe hat der Himmel?,Blau\n' +
+    'Was ist die Hauptstadt von Deutschland?,Berlin\n' +
+    'Wie viele Planeten hat unser Sonnensystem?,8';
 
   const blob = new Blob([template], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);

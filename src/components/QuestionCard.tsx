@@ -1,62 +1,73 @@
+import { useState } from 'react';
 import type { Question } from '../types';
 import { Card } from './Card';
+import { Input } from './Input';
+import { Button } from './Button';
 import './QuestionCard.css';
 
 interface QuestionCardProps {
   question: Question | Omit<Question, 'correct'>;
-  selectedOption?: number;
-  onSelectOption?: (optionIndex: number) => void;
+  answer?: string;
+  onSubmitAnswer?: (answer: string) => void;
   showCorrect?: boolean;
   disabled?: boolean;
 }
 
 export function QuestionCard({
   question,
-  selectedOption,
-  onSelectOption,
+  answer,
+  onSubmitAnswer,
   showCorrect = false,
   disabled = false,
 }: QuestionCardProps) {
-  const getOptionClass = (index: number): string => {
-    const classes = ['question-option'];
+  const [inputValue, setInputValue] = useState('');
 
-    if (selectedOption === index) {
-      classes.push('question-option--selected');
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (inputValue.trim() && onSubmitAnswer) {
+      onSubmitAnswer(inputValue.trim());
     }
-
-    if (showCorrect && 'correct' in question) {
-      if (index === question.correct) {
-        classes.push('question-option--correct');
-      } else if (selectedOption === index) {
-        classes.push('question-option--wrong');
-      }
-    }
-
-    if (disabled) {
-      classes.push('question-option--disabled');
-    }
-
-    return classes.join(' ');
   };
 
-  const optionLabels = ['A', 'B', 'C', 'D'];
+  const hasCorrect = 'correct' in question;
+  const isCorrect =
+    hasCorrect && showCorrect && answer?.toLowerCase() === question.correct.toLowerCase();
+  const isWrong =
+    hasCorrect && showCorrect && answer && answer.toLowerCase() !== question.correct.toLowerCase();
 
   return (
     <Card className="question-card">
       <h3 className="question-text">{question.text}</h3>
-      <div className="question-options">
-        {question.options.map((option, index) => (
-          <button
-            key={index}
-            className={getOptionClass(index)}
-            onClick={() => onSelectOption && onSelectOption(index)}
-            disabled={disabled || !onSelectOption}
-          >
-            <span className="option-label">{optionLabels[index]}</span>
-            <span className="option-text">{option}</span>
-          </button>
-        ))}
-      </div>
+
+      {disabled && answer ? (
+        <div
+          className={`answer-display ${isCorrect ? 'answer-display--correct' : ''} ${isWrong ? 'answer-display--wrong' : ''}`}
+        >
+          <span className="answer-label">Deine Antwort:</span>
+          <span className="answer-text">{answer}</span>
+          {showCorrect && hasCorrect && (
+            <div className="correct-answer">
+              <span className="answer-label">Korrekte Antwort:</span>
+              <span className="answer-text">{question.correct}</span>
+            </div>
+          )}
+        </div>
+      ) : disabled ? (
+        <p className="waiting-text">Warte auf die Frage...</p>
+      ) : (
+        <form onSubmit={handleSubmit} className="answer-form">
+          <Input
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            placeholder="Deine Antwort eingeben..."
+            fullWidth
+            disabled={disabled}
+          />
+          <Button type="submit" disabled={!inputValue.trim()}>
+            Antwort abschicken
+          </Button>
+        </form>
+      )}
     </Card>
   );
 }

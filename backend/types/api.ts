@@ -17,7 +17,7 @@ export interface JoinTeamRequest {
 
 export interface SubmitAnswerRequest {
   question_id: number;
-  selected_option: number;
+  answer: string;
 }
 
 // Response types
