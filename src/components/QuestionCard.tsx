@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Question } from '../types';
 import { Card } from './Card';
 import { Input } from './Input';
@@ -21,6 +21,11 @@ export function QuestionCard({
   disabled = false,
 }: QuestionCardProps) {
   const [inputValue, setInputValue] = useState('');
+
+  // Eingabefeld leeren, wenn sich die Frage ändert
+  useEffect(() => {
+    setInputValue('');
+  }, [question.text]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

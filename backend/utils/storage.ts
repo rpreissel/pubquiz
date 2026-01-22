@@ -184,12 +184,50 @@ export async function updateTeamAnswer(
       team.answers.push(answer);
     }
 
-    // Recalculate total score
-    team.total_score = team.answers.filter((a) => a.is_correct).length;
+    // Recalculate total score based on individual answer scores
+    team.total_score = team.answers.reduce(
+      (sum, a) => sum + (a.score ?? (a.is_correct ? 1 : 0)),
+      0,
+    );
 
     await saveTeam(team);
   } catch (error) {
     console.error(`Failed to update team ${teamId} answer:`, error);
+    throw error;
+  }
+}
+
+export async function updateAnswerScore(
+  teamId: string,
+  quizCode: string,
+  questionId: number,
+  score: number,
+): Promise<Team> {
+  try {
+    const team = await loadTeam(teamId, quizCode);
+    if (!team) {
+      throw new Error(`Team ${teamId} not found`);
+    }
+
+    const answerIndex = team.answers.findIndex((a) => a.question_id === questionId);
+    if (answerIndex < 0) {
+      throw new Error(`Answer for question ${questionId} not found`);
+    }
+
+    // Update score and is_correct based on score value
+    team.answers[answerIndex].score = score;
+    team.answers[answerIndex].is_correct = score === 1;
+
+    // Recalculate total score
+    team.total_score = team.answers.reduce(
+      (sum, a) => sum + (a.score ?? (a.is_correct ? 1 : 0)),
+      0,
+    );
+
+    await saveTeam(team);
+    return team;
+  } catch (error) {
+    console.error(`Failed to update answer score for team ${teamId}:`, error);
     throw error;
   }
 }

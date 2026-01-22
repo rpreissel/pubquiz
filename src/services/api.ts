@@ -114,4 +114,24 @@ export async function getTeam(teamId: string, quizCode: string): Promise<Team> {
   return data.team;
 }
 
+export async function updateAnswerScore(
+  teamId: string,
+  quizCode: string,
+  questionId: number,
+  score: number,
+): Promise<Team> {
+  const response = await fetch(`${API_BASE_URL}/team/${teamId}/score`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      quiz_code: quizCode,
+      question_id: questionId,
+      score,
+    }),
+  });
+
+  const data = await handleResponse<{ team: Team }>(response);
+  return data.team;
+}
+
 export { ApiError };

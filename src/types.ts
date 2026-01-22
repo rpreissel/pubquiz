@@ -19,6 +19,7 @@ export interface Answer {
   question_id: number;
   answer: string;
   is_correct: boolean;
+  score: number; // 0, 0.5, or 1 points
 }
 
 export interface Team {

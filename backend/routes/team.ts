@@ -6,6 +6,7 @@ import type {
   JoinTeamResponse,
   SubmitAnswerRequest,
   SubmitAnswerResponse,
+  UpdateAnswerScoreRequest,
   GetTeamResponse,
   ErrorResponse,
 } from '../types/api';
@@ -14,6 +15,7 @@ import {
   saveTeam,
   loadTeam,
   updateTeamAnswer,
+  updateAnswerScore,
   getTeamsByQuizCode,
 } from '../utils/storage';
 import { validateTeamName } from '../utils/validation';
@@ -171,6 +173,7 @@ router.post('/:teamId/answer', async (req: Request, res: Response) => {
       question_id,
       answer: answerText.trim(),
       is_correct: isCorrect,
+      score: isCorrect ? 1 : 0,
     };
 
     // Update team answer
@@ -222,6 +225,44 @@ router.get('/:teamId', async (req: Request, res: Response) => {
     res.status(500).json({
       error: 'Internal Server Error',
       message: 'Failed to fetch team',
+    } as ErrorResponse);
+  }
+});
+
+// PATCH /api/team/:teamId/score - Update answer score (for quiz master)
+router.patch('/:teamId/score', async (req: Request, res: Response) => {
+  try {
+    const teamId = req.params.teamId as string;
+    const { quiz_code, question_id, score } = req.body as UpdateAnswerScoreRequest;
+
+    // Validate input
+    if (!quiz_code || typeof question_id !== 'number') {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'quiz_code and question_id are required',
+      } as ErrorResponse);
+    }
+
+    // Validate score value
+    if (score !== 0 && score !== 0.5 && score !== 1) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Score must be 0, 0.5, or 1',
+      } as ErrorResponse);
+    }
+
+    // Update the answer score
+    const updatedTeam = await updateAnswerScore(teamId, quiz_code, question_id, score);
+
+    res.json({
+      team: updatedTeam,
+      message: 'Score updated successfully',
+    });
+  } catch (error) {
+    console.error('Error updating answer score:', error);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'Failed to update score',
     } as ErrorResponse);
   }
 });

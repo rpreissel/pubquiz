@@ -20,6 +20,12 @@ export interface SubmitAnswerRequest {
   answer: string;
 }
 
+export interface UpdateAnswerScoreRequest {
+  quiz_code: string;
+  question_id: number;
+  score: number; // 0, 0.5, or 1
+}
+
 // Response types
 export interface CreateQuizResponse {
   quiz: Quiz;
