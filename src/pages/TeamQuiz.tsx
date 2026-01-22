@@ -179,6 +179,12 @@ export function TeamQuiz() {
     );
   }
 
+  // Only show questions up to current_question_index (released by QuizMaster)
+  const releasedQuestions = quiz.questions.slice(0, quiz.current_question_index + 1);
+  const answeredCount = team.answers.filter((a) =>
+    releasedQuestions.some((q) => q.id === a.question_id),
+  ).length;
+
   return (
     <div className="team-quiz">
       <div className="team-quiz-header">
@@ -193,15 +199,17 @@ export function TeamQuiz() {
 
       <div className="progress-bar">
         <div className="progress-info">
-          <span>{quiz.questions.length} Fragen</span>
           <span>
-            {team.answers.length} / {quiz.questions.length} beantwortet
+            Frage {quiz.current_question_index + 1} von {quiz.questions.length}
+          </span>
+          <span>
+            {answeredCount} / {releasedQuestions.length} beantwortet
           </span>
         </div>
         <div className="progress-track">
           <div
             className="progress-fill"
-            style={{ width: `${(team.answers.length / quiz.questions.length) * 100}%` }}
+            style={{ width: `${(answeredCount / releasedQuestions.length) * 100}%` }}
           />
         </div>
       </div>
@@ -213,7 +221,7 @@ export function TeamQuiz() {
       )}
 
       <div className="questions-list">
-        {quiz.questions.map((question, index) => {
+        {releasedQuestions.map((question, index) => {
           const existingAnswer = team.answers.find((a) => a.question_id === question.id);
           const currentValue = answers[question.id] || '';
           const hasChanged = existingAnswer
