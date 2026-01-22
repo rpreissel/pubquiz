@@ -1,0 +1,10 @@
+node_modules
+dist
+*.log
+.DS_Store
+data/quizzes/*.json
+data/teams/**/*.json
+!data/quizzes/.gitkeep
+!data/teams/.gitkeep
+.env
+.env.local
