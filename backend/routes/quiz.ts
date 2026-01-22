@@ -154,8 +154,19 @@ router.get('/:code/master', async (req: Request, res: Response) => {
       } as ErrorResponse);
     }
 
+    // Get all teams and their answer status for the current question
+    const allTeams = await getTeamsByQuizCode(code);
+    const currentQuestionId = quiz.current_question_index;
+
+    const teams = allTeams.map((team) => ({
+      id: team.id,
+      name: team.name,
+      hasAnswered: team.answers.some((a) => a.question_id === currentQuestionId),
+    }));
+
     res.json({
       quiz,
+      teams,
     } as GetQuizMasterResponse);
   } catch (error) {
     console.error('Error fetching quiz for master:', error);

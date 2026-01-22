@@ -1,4 +1,4 @@
-import type { Quiz, Question, Team, Answer } from '../types';
+import type { Quiz, Question, Team, Answer, TeamAnswerStatus } from '../types';
 
 const API_BASE_URL = '/api';
 
@@ -42,10 +42,11 @@ export async function getQuiz(code: string): Promise<Quiz> {
   return data.quiz;
 }
 
-export async function getQuizMaster(code: string): Promise<Quiz> {
+export async function getQuizMaster(
+  code: string,
+): Promise<{ quiz: Quiz; teams: TeamAnswerStatus[] }> {
   const response = await fetch(`${API_BASE_URL}/quiz/${code}/master`);
-  const data = await handleResponse<{ quiz: Quiz }>(response);
-  return data.quiz;
+  return handleResponse(response);
 }
 
 export async function updateQuizStatus(

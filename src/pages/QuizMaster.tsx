@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import type { Quiz } from '../types';
+import type { Quiz, TeamAnswerStatus } from '../types';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { QuestionCard } from '../components/QuestionCard';
@@ -12,6 +12,7 @@ export function QuizMaster() {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
   const [quiz, setQuiz] = useState<Quiz | null>(null);
+  const [teams, setTeams] = useState<TeamAnswerStatus[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -33,10 +34,11 @@ export function QuizMaster() {
     }
 
     try {
-      const quizData = await getQuizMaster(code);
-      setQuiz(quizData);
+      const data = await getQuizMaster(code);
+      setQuiz(data.quiz);
+      setTeams(data.teams);
       // Sync local state with server state
-      setCurrentQuestionIndex(quizData.current_question_index);
+      setCurrentQuestionIndex(data.quiz.current_question_index);
       setError('');
     } catch (err) {
       if (err instanceof ApiError) {
@@ -157,16 +159,33 @@ export function QuizMaster() {
       </div>
 
       {quiz.status === 'draft' && (
-        <Card className="draft-notice">
-          <h3>🎯 Quiz ist bereit!</h3>
-          <p>
-            Teile den Code <strong>{quiz.code}</strong> mit den Teams. Sobald alle beigetreten sind,
-            starte das Quiz.
-          </p>
-          <Button size="large" onClick={handleStartQuiz}>
-            Quiz starten
-          </Button>
-        </Card>
+        <>
+          <Card className="draft-notice">
+            <h3>Quiz ist bereit!</h3>
+            <p>
+              Teile den Code <strong>{quiz.code}</strong> mit den Teams. Sobald alle beigetreten
+              sind, starte das Quiz.
+            </p>
+            <Button size="large" onClick={handleStartQuiz}>
+              Quiz starten
+            </Button>
+          </Card>
+
+          <Card className="team-status">
+            <h3>Beigetretene Teams ({teams.length})</h3>
+            {teams.length === 0 ? (
+              <p className="no-teams">Noch keine Teams beigetreten</p>
+            ) : (
+              <ul className="team-list">
+                {teams.map((team) => (
+                  <li key={team.id} className="team-item waiting">
+                    <span className="team-name">{team.name}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </>
       )}
 
       {quiz.status === 'active' && (
@@ -206,6 +225,27 @@ export function QuizMaster() {
                 {currentQuestion.options[currentQuestion.correct]}
               </span>
             </div>
+          </Card>
+
+          <Card className="team-status">
+            <h3>
+              Teams ({teams.filter((t) => t.hasAnswered).length}/{teams.length} beantwortet)
+            </h3>
+            {teams.length === 0 ? (
+              <p className="no-teams">Noch keine Teams beigetreten</p>
+            ) : (
+              <ul className="team-list">
+                {teams.map((team) => (
+                  <li
+                    key={team.id}
+                    className={`team-item ${team.hasAnswered ? 'answered' : 'waiting'}`}
+                  >
+                    <span className="team-name">{team.name}</span>
+                    <span className="team-status-indicator">{team.hasAnswered ? '✓' : '...'}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </Card>
         </>
       )}

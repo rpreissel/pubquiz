@@ -31,8 +31,15 @@ export interface GetQuizResponse {
   };
 }
 
+export interface TeamAnswerStatus {
+  id: string;
+  name: string;
+  hasAnswered: boolean;
+}
+
 export interface GetQuizMasterResponse {
   quiz: Quiz;
+  teams: TeamAnswerStatus[];
 }
 
 export interface JoinTeamResponse {

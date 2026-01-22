@@ -30,3 +30,10 @@ export interface Team {
   total_score: number;
   joined_at: string;
 }
+
+// QuizMaster view types
+export interface TeamAnswerStatus {
+  id: string;
+  name: string;
+  hasAnswered: boolean;
+}
