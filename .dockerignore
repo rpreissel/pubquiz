@@ -1,0 +1,17 @@
+node_modules
+dist
+.git
+.gitignore
+npm-debug.log
+.env
+.DS_Store
+*.md
+.prettierrc.json
+.eslintrc.json
+.eslintignore
+eslint.config.js
+vitest.config.ts
+src/test
+*.test.ts
+*.test.tsx
+example-quiz.csv
