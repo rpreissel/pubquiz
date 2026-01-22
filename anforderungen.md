@@ -11,11 +11,13 @@ Eine einfache Pub-Quiz Web-App. Quiz Master stellt Fragen nacheinander, Teams be
 ## 2. Benutzerrollen
 
 ### Quiz Master (Host)
+
 - Erstellt Quiz mit Fragen
 - Stellt Fragen nacheinander (manuell weiterblÃ¤ttern)
 - Sieht Endergebnisse am Schluss
 
 ### Team (Spieler)
+
 - Treten Quiz bei (via Code oder direkt)
 - Beantworten Fragen der Reihe nach
 - Sehen finale Ranking nach letzter Frage
@@ -25,18 +27,21 @@ Eine einfache Pub-Quiz Web-App. Quiz Master stellt Fragen nacheinander, Teams be
 ## 3. Hauptfunktionen
 
 ### 3.1 Quiz Setup
+
 - **Quiz erstellen:** Quiz Master gibt Titel ein
-- **Fragen hinzufÃ¼gen:** Manuelle Eingabe von Frage + 4 Antwortoptionen + korrekte Antwort
-- **Oder Import:** CSV-Upload mit Fragen (Spalten: question, optionA, optionB, optionC, optionD, correct)
+- **Fragen hinzufügen:** Manuelle Eingabe von Frage + korrekte Antwort als Text
+- **Oder Import:** CSV-Upload mit Fragen (Spalten: question, correct)
 - **Speichern & Aktivieren:** Quiz wird mit eindeutigem Code aktiviert (z.B. `QUIZ123`)
 
 ### 3.2 Team-Beitritt
+
 - Team Ã¶ffnet App
 - Gibt Quiz-Code ein
 - Gibt Team-Namen ein
 - "Beitreten" â†’ Wartet auf Start
 
 ### 3.3 Quiz durchfÃ¼hren
+
 1. Quiz Master klickt "Quiz starten"
 2. **Frage 1 wird angezeigt** - Teams sehen sie auf ihren GerÃ¤ten
 3. Teams wÃ¤hlen eine der 4 Optionen
@@ -51,6 +56,7 @@ Eine einfache Pub-Quiz Web-App. Quiz Master stellt Fragen nacheinander, Teams be
 ## 4. User Flows (Simpel)
 
 ### Flow 1: Quiz erstellen
+
 ```
 1. Quiz Master klickt "Neues Quiz"
 2. Titel eingeben (z.B. "Pub Quiz 2026")
@@ -64,6 +70,7 @@ Eine einfache Pub-Quiz Web-App. Quiz Master stellt Fragen nacheinander, Teams be
 ```
 
 ### Flow 2: Team beitreten
+
 ```
 1. Team Ã¶ffnet die Web-App
 2. Klickt "Quiz beitreten"
@@ -74,27 +81,28 @@ Eine einfache Pub-Quiz Web-App. Quiz Master stellt Fragen nacheinander, Teams be
 ```
 
 ### Flow 3: Quiz spielen
-```
+
+````
 Quiz Master Seite:
   1. Sieht alle beigetretenen Teams
   2. Klickt "Quiz starten"
-  
+
 Team Seite (synchron, aber nicht live):
   1. Sieht Frage 1: "Welche Farbe ist der Himmel?"
   2. Sieht 4 Buttons: A) Blau  B) Rot  C) GrÃ¼n  D) Gelb
   3. Klickt "A) Blau"
   4. Button wird grÃ¼n, "Speichern" wird klickbar
   5. Klickt "Speichern" (oder Auto-Save nach 5s)
-  
+
 Quiz Master Seite:
   6. Sieht "Team 1: beantwortet, Team 2: beantwortet, Team 3: noch offen"
   7. Klickt "NÃ¤chste Frage" â†’ Gibt allen Teams Signal
-  
+
 Team Seite:
   8. Frage 1 ist jetzt "gesperrt" (Antwort kann nicht mehr geÃ¤ndert werden)
   9. Sieht Frage 2
   10. Antwortet wieder
-  
+
 
 ---
 
@@ -107,7 +115,7 @@ Team Seite:
 - **Local State:** Antworten werden lokal gespeichert, bei Quiz-End hochgeladen
 
 ### Backend
-- **Framework:** Node.js (Express) 
+- **Framework:** Node.js (Express)
 - **Datenbank:** filesystem
 - **Endpoints (sehr simpel):**
   - `POST /quiz/create` - Quiz speichern
@@ -140,9 +148,10 @@ Team Seite:
   "status": "draft|active|finished",
   "created_at": "2026-01-22"
 }
-```
+````
 
 ### Team
+
 ```json
 {
   "id": "abc123",
@@ -184,8 +193,6 @@ Team Seite:
 - âŒ Mobile Native Apps
 
 ---
-
-
 
 ## 10. Success Criteria
 

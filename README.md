@@ -158,12 +158,12 @@ pubquiz/
 ### 3. CSV-Format für Fragen
 
 ```csv
-question,optionA,optionB,optionC,optionD,correct
-Welche Farbe ist der Himmel?,Blau,Rot,Grün,Gelb,A
-Was ist 2+2?,3,4,5,6,B
+question,correct
+Welche Farbe hat der Himmel?,Blau
+Was ist 2+2?,4
 ```
 
-**Korrekte Antwort:** `A`, `B`, `C`, `D` oder `0`, `1`, `2`, `3`
+**Format:** Frage und korrekte Antwort als Text (case-insensitive Vergleich)
 
 ## 🔧 Development
 
