@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import type { Quiz, Team } from '../types';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
-import { QuestionCard } from '../components/QuestionCard';
+import { Input } from '../components/Input';
 import { getQuiz, getTeam, submitAnswer } from '../services/api';
 import { loadTeamSession, clearTeamSession } from '../utils/storage';
 import { ApiError } from '../services/api';
@@ -15,8 +15,9 @@ export function TeamQuiz() {
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [team, setTeam] = useState<Team | null>(null);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const [submittingQuestion, setSubmittingQuestion] = useState<number | null>(null);
   const [error, setError] = useState('');
+  const [answers, setAnswers] = useState<Record<number, string>>({});
 
   useEffect(() => {
     // Verify team session
@@ -45,6 +46,23 @@ export function TeamQuiz() {
       setQuiz(quizData);
       setTeam(teamData);
       setError('');
+
+      // Initialize answers from team data
+      const existingAnswers: Record<number, string> = {};
+      teamData.answers.forEach((a) => {
+        existingAnswers[a.question_id] = a.answer;
+      });
+      setAnswers((prev) => {
+        // Only update if we don't have local changes
+        const updated = { ...prev };
+        Object.keys(existingAnswers).forEach((key) => {
+          const qId = Number(key);
+          if (!updated[qId]) {
+            updated[qId] = existingAnswers[qId];
+          }
+        });
+        return updated;
+      });
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -56,21 +74,20 @@ export function TeamQuiz() {
     }
   };
 
-  const handleSubmitAnswer = async (answer: string) => {
+  const handleSubmitAnswer = async (questionId: number) => {
     if (!code || !teamId || !quiz) {
       return;
     }
 
-    const currentQuestionIndex = quiz.current_question_index;
-    const currentQuestion = quiz.questions[currentQuestionIndex];
-    if (!currentQuestion) {
+    const answer = answers[questionId]?.trim();
+    if (!answer) {
       return;
     }
 
-    setSubmitting(true);
+    setSubmittingQuestion(questionId);
 
     try {
-      await submitAnswer(teamId, code, currentQuestion.id, answer);
+      await submitAnswer(teamId, code, questionId, answer);
       await loadData();
       setError('');
     } catch (err) {
@@ -80,8 +97,12 @@ export function TeamQuiz() {
         setError('Fehler beim Speichern der Antwort');
       }
     } finally {
-      setSubmitting(false);
+      setSubmittingQuestion(null);
     }
+  };
+
+  const handleAnswerChange = (questionId: number, value: string) => {
+    setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
   const handleLeaveQuiz = () => {
@@ -158,11 +179,6 @@ export function TeamQuiz() {
     );
   }
 
-  const currentQuestionIndex = quiz.current_question_index;
-  const currentQuestion = quiz.questions[currentQuestionIndex];
-  const existingAnswer = team.answers.find((a) => a.question_id === currentQuestion.id);
-  const hasAnswered = !!existingAnswer;
-
   return (
     <div className="team-quiz">
       <div className="team-quiz-header">
@@ -177,9 +193,7 @@ export function TeamQuiz() {
 
       <div className="progress-bar">
         <div className="progress-info">
-          <span>
-            Frage {currentQuestionIndex + 1} von {quiz.questions.length}
-          </span>
+          <span>{quiz.questions.length} Fragen</span>
           <span>
             {team.answers.length} / {quiz.questions.length} beantwortet
           </span>
@@ -192,27 +206,56 @@ export function TeamQuiz() {
         </div>
       </div>
 
-      <QuestionCard
-        question={currentQuestion}
-        answer={existingAnswer?.answer}
-        onSubmitAnswer={hasAnswered ? undefined : handleSubmitAnswer}
-        disabled={hasAnswered || submitting}
-      />
-
       {error && (
         <Card className="error-notice">
           <p>{error}</p>
         </Card>
       )}
 
-      {hasAnswered && (
-        <Card className="answer-actions">
-          <div className="answered-notice">
-            <p>Antwort wurde gespeichert</p>
-            <p className="waiting-text">Warte auf die nächste Frage vom Quiz Master...</p>
-          </div>
-        </Card>
-      )}
+      <div className="questions-list">
+        {quiz.questions.map((question, index) => {
+          const existingAnswer = team.answers.find((a) => a.question_id === question.id);
+          const currentValue = answers[question.id] || '';
+          const hasChanged = existingAnswer
+            ? currentValue !== existingAnswer.answer
+            : !!currentValue;
+          const isSubmitting = submittingQuestion === question.id;
+
+          return (
+            <Card key={question.id} className="question-item">
+              <div className="question-header">
+                <span className="question-number">Frage {index + 1}</span>
+                {existingAnswer && !hasChanged && (
+                  <span className="answered-badge">Beantwortet</span>
+                )}
+              </div>
+              <h3 className="question-text">{question.text}</h3>
+              <form
+                className="answer-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSubmitAnswer(question.id);
+                }}
+              >
+                <Input
+                  value={currentValue}
+                  onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                  placeholder="Deine Antwort eingeben..."
+                  fullWidth
+                  disabled={isSubmitting}
+                />
+                <Button
+                  type="submit"
+                  disabled={!currentValue.trim() || isSubmitting || !hasChanged}
+                  size="small"
+                >
+                  {isSubmitting ? 'Speichert...' : existingAnswer ? 'Ändern' : 'Speichern'}
+                </Button>
+              </form>
+            </Card>
+          );
+        })}
+      </div>
     </div>
   );
 }
