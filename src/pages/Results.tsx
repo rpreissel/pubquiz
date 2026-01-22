@@ -3,12 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import type { Quiz, Team } from '../types';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
-import { getQuizResults, updateAnswerScore } from '../services/api';
+import { getQuizResultsByToken, updateAnswerScore } from '../services/api';
 import { ApiError } from '../services/api';
 import './Results.css';
 
 export function Results() {
-  const { code } = useParams<{ code: string }>();
+  const { masterToken } = useParams<{ masterToken: string }>();
   const navigate = useNavigate();
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -16,20 +16,20 @@ export function Results() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!code) {
+    if (!masterToken) {
       return;
     }
 
     loadResults();
-  }, [code]);
+  }, [masterToken]);
 
   const loadResults = async () => {
-    if (!code) {
+    if (!masterToken) {
       return;
     }
 
     try {
-      const data = await getQuizResults(code);
+      const data = await getQuizResultsByToken(masterToken);
       setQuiz(data.quiz);
       setTeams(data.teams);
       setError('');
@@ -45,10 +45,10 @@ export function Results() {
   };
 
   const handleScoreChange = async (teamId: string, questionId: number, score: number) => {
-    if (!code) return;
+    if (!quiz) return;
 
     try {
-      const updatedTeam = await updateAnswerScore(teamId, code, questionId, score);
+      const updatedTeam = await updateAnswerScore(teamId, quiz.code, questionId, score);
 
       // Update the teams state with the updated team
       setTeams((prevTeams) =>
@@ -80,7 +80,7 @@ export function Results() {
       <div className="results">
         <Card>
           <div className="error-state">
-            <h2>❌ Fehler</h2>
+            <h2>Fehler</h2>
             <p>{error || 'Quiz nicht gefunden'}</p>
             <Button onClick={() => navigate('/')}>Zur Startseite</Button>
           </div>
@@ -90,9 +90,9 @@ export function Results() {
   }
 
   const getMedalEmoji = (rank: number): string => {
-    if (rank === 1) return '🥇';
-    if (rank === 2) return '🥈';
-    if (rank === 3) return '🥉';
+    if (rank === 1) return '1.';
+    if (rank === 2) return '2.';
+    if (rank === 3) return '3.';
     return '';
   };
 
@@ -100,13 +100,13 @@ export function Results() {
     <div className="results">
       <div className="results-header">
         <Button variant="secondary" onClick={() => navigate('/')}>
-          ← Zur Startseite
+          Zur Startseite
         </Button>
-        <h1 className="results-title">🏆 Ergebnisse</h1>
+        <h1 className="results-title">Ergebnisse</h1>
         <div className="quiz-info">
           <h2 className="quiz-name">{quiz.title}</h2>
           <p className="quiz-meta">
-            {quiz.questions.length} Fragen • {teams.length} Teams
+            {quiz.questions.length} Fragen - {teams.length} Teams
           </p>
         </div>
       </div>
@@ -136,7 +136,7 @@ export function Results() {
                           {team.answers.filter((a) => a.is_correct).length} /{' '}
                           {quiz.questions.length} richtig
                         </span>
-                        <span className="stat-separator">•</span>
+                        <span className="stat-separator">-</span>
                         <span className="stat">{team.total_score} Punkte</span>
                       </div>
                     </div>
@@ -194,7 +194,7 @@ export function Results() {
                                   onClick={() => handleScoreChange(team.id, question.id, 0.5)}
                                   title="0.5 Punkte"
                                 >
-                                  ½
+                                  1/2
                                 </button>
                                 <button
                                   className={`score-btn ${currentScore === 1 ? 'active' : ''}`}

@@ -1,18 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import type { Quiz, Team } from '../types';
+import type { Quiz, Team, Answer } from '../types';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { Input } from '../components/Input';
-import { getQuiz, getTeam, submitAnswer } from '../services/api';
+import { getTeamBySessionToken, submitAnswerByToken } from '../services/api';
 import { loadTeamSession, clearTeamSession } from '../utils/storage';
 import { ApiError } from '../services/api';
 import './TeamQuiz.css';
 
 export function TeamQuiz() {
-  const { code, teamId } = useParams<{ code: string; teamId: string }>();
+  const { sessionToken } = useParams<{ sessionToken: string }>();
   const navigate = useNavigate();
-  const [quiz, setQuiz] = useState<Quiz | null>(null);
+  const [quiz, setQuiz] = useState<Omit<Quiz, 'master_token'> | null>(null);
   const [team, setTeam] = useState<Team | null>(null);
   const [loading, setLoading] = useState(true);
   const [submittingQuestion, setSubmittingQuestion] = useState<number | null>(null);
@@ -20,10 +20,10 @@ export function TeamQuiz() {
   const [answers, setAnswers] = useState<Record<number, string>>({});
 
   useEffect(() => {
-    // Verify team session
+    // Verify session token from URL matches stored session
     const session = loadTeamSession();
-    if (!session || session.teamId !== teamId || session.quizCode !== code) {
-      setError('Ungültige Team-Sitzung');
+    if (!session || session.sessionToken !== sessionToken) {
+      setError('Ungultige Team-Sitzung');
       setLoading(false);
       return;
     }
@@ -33,23 +33,23 @@ export function TeamQuiz() {
     // Poll for quiz updates every 5 seconds
     const interval = setInterval(loadData, 5000);
     return () => clearInterval(interval);
-  }, [code, teamId]);
+  }, [sessionToken]);
 
   const loadData = async () => {
-    if (!code || !teamId) {
+    if (!sessionToken) {
       return;
     }
 
     try {
-      const [quizData, teamData] = await Promise.all([getQuiz(code), getTeam(teamId, code)]);
+      const data = await getTeamBySessionToken(sessionToken);
 
-      setQuiz(quizData);
-      setTeam(teamData);
+      setQuiz(data.quiz);
+      setTeam(data.team);
       setError('');
 
       // Initialize answers from team data
       const existingAnswers: Record<number, string> = {};
-      teamData.answers.forEach((a) => {
+      data.team.answers.forEach((a: Answer) => {
         existingAnswers[a.question_id] = a.answer;
       });
       setAnswers((prev) => {
@@ -75,7 +75,7 @@ export function TeamQuiz() {
   };
 
   const handleSubmitAnswer = async (questionId: number) => {
-    if (!code || !teamId || !quiz) {
+    if (!sessionToken || !quiz) {
       return;
     }
 
@@ -87,7 +87,7 @@ export function TeamQuiz() {
     setSubmittingQuestion(questionId);
 
     try {
-      await submitAnswer(teamId, code, questionId, answer);
+      await submitAnswerByToken(sessionToken, questionId, answer);
       await loadData();
       setError('');
     } catch (err) {
@@ -108,10 +108,6 @@ export function TeamQuiz() {
   const handleLeaveQuiz = () => {
     clearTeamSession();
     navigate('/');
-  };
-
-  const handleViewResults = () => {
-    navigate(`/quiz/${code}/results`);
   };
 
   if (loading) {
@@ -143,15 +139,12 @@ export function TeamQuiz() {
         <Card className="finished-card">
           <h2 className="finished-title">Quiz beendet!</h2>
           <p className="finished-text">
-            Danke fürs Mitspielen, <strong>{team.name}</strong>!
+            Danke furs Mitspielen, <strong>{team.name}</strong>!
           </p>
           <p className="score-display">
             Deine Punktzahl: <strong>{team.total_score}</strong>
           </p>
           <div className="finished-actions">
-            <Button onClick={handleViewResults} size="large" fullWidth>
-              Ergebnisse anzeigen
-            </Button>
             <Button variant="secondary" onClick={handleLeaveQuiz} fullWidth>
               Zur Startseite
             </Button>
@@ -170,7 +163,7 @@ export function TeamQuiz() {
           <p className="waiting-text">
             Willkommen, <strong>{team.name}</strong>!
           </p>
-          <p className="waiting-text">Der Quiz Master startet das Quiz in Kürze.</p>
+          <p className="waiting-text">Der Quiz Master startet das Quiz in Kurze.</p>
           <Button variant="secondary" onClick={handleLeaveQuiz} fullWidth>
             Quiz verlassen
           </Button>
@@ -257,7 +250,7 @@ export function TeamQuiz() {
                   disabled={!currentValue.trim() || isSubmitting || !hasChanged}
                   size="small"
                 >
-                  {isSubmitting ? 'Speichert...' : existingAnswer ? 'Ändern' : 'Speichern'}
+                  {isSubmitting ? 'Speichert...' : existingAnswer ? 'Andern' : 'Speichern'}
                 </Button>
               </form>
             </Card>

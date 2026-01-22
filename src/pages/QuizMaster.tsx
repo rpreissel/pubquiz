@@ -4,12 +4,16 @@ import type { Quiz, TeamAnswerStatus } from '../types';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { QuestionCard } from '../components/QuestionCard';
-import { getQuizMaster, updateQuizStatus, updateCurrentQuestion } from '../services/api';
+import {
+  getQuizByMasterToken,
+  updateQuizStatusByToken,
+  updateCurrentQuestionByToken,
+} from '../services/api';
 import { ApiError } from '../services/api';
 import './QuizMaster.css';
 
 export function QuizMaster() {
-  const { code } = useParams<{ code: string }>();
+  const { masterToken } = useParams<{ masterToken: string }>();
   const navigate = useNavigate();
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [teams, setTeams] = useState<TeamAnswerStatus[]>([]);
@@ -18,7 +22,7 @@ export function QuizMaster() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!code) {
+    if (!masterToken) {
       return;
     }
 
@@ -26,15 +30,15 @@ export function QuizMaster() {
     // Poll for updates every 5 seconds
     const interval = setInterval(loadQuiz, 5000);
     return () => clearInterval(interval);
-  }, [code]);
+  }, [masterToken]);
 
   const loadQuiz = async () => {
-    if (!code) {
+    if (!masterToken) {
       return;
     }
 
     try {
-      const data = await getQuizMaster(code);
+      const data = await getQuizByMasterToken(masterToken);
       setQuiz(data.quiz);
       setTeams(data.teams);
       // Sync local state with server state
@@ -52,12 +56,12 @@ export function QuizMaster() {
   };
 
   const handleStartQuiz = async () => {
-    if (!code || !quiz) {
+    if (!masterToken || !quiz) {
       return;
     }
 
     try {
-      await updateQuizStatus(code, 'active');
+      await updateQuizStatusByToken(masterToken, 'active');
       await loadQuiz();
     } catch (err) {
       setError('Fehler beim Starten des Quiz');
@@ -65,20 +69,20 @@ export function QuizMaster() {
   };
 
   const handleFinishQuiz = async () => {
-    if (!code || !quiz) {
+    if (!masterToken || !quiz) {
       return;
     }
 
     try {
-      await updateQuizStatus(code, 'finished');
-      navigate(`/quiz/${code}/results`);
+      await updateQuizStatusByToken(masterToken, 'finished');
+      navigate(`/results/${masterToken}`);
     } catch (err) {
       setError('Fehler beim Beenden des Quiz');
     }
   };
 
   const handleNextQuestion = async () => {
-    if (!code || !quiz || currentQuestionIndex >= quiz.questions.length - 1) {
+    if (!masterToken || !quiz || currentQuestionIndex >= quiz.questions.length - 1) {
       return;
     }
 
@@ -86,14 +90,14 @@ export function QuizMaster() {
     setCurrentQuestionIndex(newIndex);
 
     try {
-      await updateCurrentQuestion(code, newIndex);
+      await updateCurrentQuestionByToken(masterToken, newIndex);
     } catch (err) {
       setError('Fehler beim Aktualisieren der Frage');
     }
   };
 
   const handlePrevQuestion = async () => {
-    if (!code || currentQuestionIndex <= 0) {
+    if (!masterToken || currentQuestionIndex <= 0) {
       return;
     }
 
@@ -101,7 +105,7 @@ export function QuizMaster() {
     setCurrentQuestionIndex(newIndex);
 
     try {
-      await updateCurrentQuestion(code, newIndex);
+      await updateCurrentQuestionByToken(masterToken, newIndex);
     } catch (err) {
       setError('Fehler beim Aktualisieren der Frage');
     }
@@ -120,9 +124,9 @@ export function QuizMaster() {
       <div className="quiz-master">
         <Card>
           <div className="error-state">
-            <h2>❌ Fehler</h2>
+            <h2>Fehler</h2>
             <p>{error || 'Quiz nicht gefunden'}</p>
-            <Button onClick={() => navigate('/')}>Zurück zur Startseite</Button>
+            <Button onClick={() => navigate('/')}>Zur Startseite</Button>
           </div>
         </Card>
       </div>
@@ -153,7 +157,7 @@ export function QuizMaster() {
             }}
             title="Code kopieren"
           >
-            📋
+            Kopieren
           </button>
         </div>
       </div>
@@ -201,10 +205,10 @@ export function QuizMaster() {
                   onClick={handlePrevQuestion}
                   disabled={currentQuestionIndex === 0}
                 >
-                  ← Vorherige
+                  Vorherige
                 </Button>
                 {!isLastQuestion ? (
-                  <Button onClick={handleNextQuestion}>Nächste →</Button>
+                  <Button onClick={handleNextQuestion}>Nachste</Button>
                 ) : (
                   <Button variant="danger" onClick={handleFinishQuiz}>
                     Quiz beenden
@@ -238,7 +242,7 @@ export function QuizMaster() {
                     className={`team-item ${team.hasAnswered ? 'answered' : 'waiting'}`}
                   >
                     <span className="team-name">{team.name}</span>
-                    <span className="team-status-indicator">{team.hasAnswered ? '✓' : '...'}</span>
+                    <span className="team-status-indicator">{team.hasAnswered ? '/' : '...'}</span>
                   </li>
                 ))}
               </ul>
@@ -250,9 +254,9 @@ export function QuizMaster() {
       {quiz.status === 'finished' && (
         <Card>
           <div className="finished-state">
-            <h2>✅ Quiz beendet</h2>
+            <h2>Quiz beendet</h2>
             <p>Das Quiz wurde erfolgreich beendet.</p>
-            <Button onClick={() => navigate(`/quiz/${code}/results`)}>Ergebnisse anzeigen</Button>
+            <Button onClick={() => navigate(`/results/${masterToken}`)}>Ergebnisse anzeigen</Button>
           </div>
         </Card>
       )}

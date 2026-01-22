@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import { randomUUID } from 'crypto';
 import type { Quiz, Question } from '../../src/types';
 import type {
   CreateQuizRequest,
@@ -17,6 +18,7 @@ import {
   updateCurrentQuestion,
   quizExists,
   getTeamsByQuizCode,
+  findQuizByMasterToken,
 } from '../utils/storage';
 import {
   generateQuizCode,
@@ -70,6 +72,7 @@ router.post('/create', async (req: Request, res: Response) => {
       status: 'draft',
       current_question_index: 0,
       created_at: new Date().toISOString(),
+      master_token: randomUUID(),
     };
 
     // Save quiz
@@ -337,6 +340,166 @@ router.get('/', async (_req: Request, res: Response) => {
     res.status(500).json({
       error: 'Internal Server Error',
       message: 'Failed to fetch quizzes',
+    } as ErrorResponse);
+  }
+});
+
+// ==================== TOKEN-BASED ENDPOINTS ====================
+// These endpoints use secret tokens instead of quiz codes for security
+
+// GET /api/quiz/master/:masterToken - Get quiz by master token (secure)
+router.get('/master/:masterToken', async (req: Request, res: Response) => {
+  try {
+    const masterToken = req.params.masterToken as string;
+
+    const quiz = await findQuizByMasterToken(masterToken);
+
+    if (!quiz) {
+      return res.status(404).json({
+        error: 'Not Found',
+        message: 'Quiz not found',
+      } as ErrorResponse);
+    }
+
+    // Get all teams and their answer status for the current question
+    const allTeams = await getTeamsByQuizCode(quiz.code);
+    const currentQuestionId = quiz.current_question_index;
+
+    const teams = allTeams.map((team) => ({
+      id: team.id,
+      name: team.name,
+      hasAnswered: team.answers.some((a) => a.question_id === currentQuestionId),
+    }));
+
+    res.json({
+      quiz,
+      teams,
+    } as GetQuizMasterResponse);
+  } catch (error) {
+    console.error('Error fetching quiz by master token:', error);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'Failed to fetch quiz',
+    } as ErrorResponse);
+  }
+});
+
+// PATCH /api/quiz/master/:masterToken/status - Update quiz status by master token
+router.patch('/master/:masterToken/status', async (req: Request, res: Response) => {
+  try {
+    const masterToken = req.params.masterToken as string;
+    const { status } = req.body as UpdateQuizStatusRequest;
+
+    const quiz = await findQuizByMasterToken(masterToken);
+
+    if (!quiz) {
+      return res.status(404).json({
+        error: 'Not Found',
+        message: 'Quiz not found',
+      } as ErrorResponse);
+    }
+
+    if (!status || !['draft', 'active', 'finished'].includes(status)) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Invalid status value',
+      } as ErrorResponse);
+    }
+
+    await updateQuizStatus(quiz.code, status);
+
+    res.json({
+      message: 'Quiz status updated successfully',
+      status,
+    });
+  } catch (error) {
+    console.error('Error updating quiz status:', error);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'Failed to update quiz status',
+    } as ErrorResponse);
+  }
+});
+
+// PATCH /api/quiz/master/:masterToken/question - Update current question by master token
+router.patch('/master/:masterToken/question', async (req: Request, res: Response) => {
+  try {
+    const masterToken = req.params.masterToken as string;
+    const { questionIndex } = req.body as { questionIndex: number };
+
+    const quiz = await findQuizByMasterToken(masterToken);
+
+    if (!quiz) {
+      return res.status(404).json({
+        error: 'Not Found',
+        message: 'Quiz not found',
+      } as ErrorResponse);
+    }
+
+    if (typeof questionIndex !== 'number' || questionIndex < 0) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Invalid question index',
+      } as ErrorResponse);
+    }
+
+    if (questionIndex >= quiz.questions.length) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Question index out of range',
+      } as ErrorResponse);
+    }
+
+    await updateCurrentQuestion(quiz.code, questionIndex);
+
+    res.json({
+      message: 'Current question updated successfully',
+      questionIndex,
+    });
+  } catch (error) {
+    console.error('Error updating current question:', error);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'Failed to update current question',
+    } as ErrorResponse);
+  }
+});
+
+// GET /api/quiz/master/:masterToken/results - Get quiz results by master token
+router.get('/master/:masterToken/results', async (req: Request, res: Response) => {
+  try {
+    const masterToken = req.params.masterToken as string;
+
+    const quiz = await findQuizByMasterToken(masterToken);
+
+    if (!quiz) {
+      return res.status(404).json({
+        error: 'Not Found',
+        message: 'Quiz not found',
+      } as ErrorResponse);
+    }
+
+    const teams = await getTeamsByQuizCode(quiz.code);
+
+    // Sort teams by score (descending)
+    const sortedTeams = teams
+      .map((team) => ({
+        id: team.id,
+        name: team.name,
+        total_score: team.total_score,
+        answers: team.answers,
+      }))
+      .sort((a, b) => b.total_score - a.total_score);
+
+    res.json({
+      quiz,
+      teams: sortedTeams,
+    } as QuizResultsResponse);
+  } catch (error) {
+    console.error('Error fetching quiz results:', error);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'Failed to fetch quiz results',
     } as ErrorResponse);
   }
 });

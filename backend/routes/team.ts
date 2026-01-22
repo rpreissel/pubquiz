@@ -17,6 +17,7 @@ import {
   updateTeamAnswer,
   updateAnswerScore,
   getTeamsByQuizCode,
+  findTeamBySessionToken,
 } from '../utils/storage';
 import { validateTeamName } from '../utils/validation';
 
@@ -75,6 +76,7 @@ router.post('/join', async (req: Request, res: Response) => {
       answers: [],
       total_score: 0,
       joined_at: new Date().toISOString(),
+      session_token: randomUUID(),
     };
 
     // Save team
@@ -263,6 +265,145 @@ router.patch('/:teamId/score', async (req: Request, res: Response) => {
     res.status(500).json({
       error: 'Internal Server Error',
       message: 'Failed to update score',
+    } as ErrorResponse);
+  }
+});
+
+// ==================== TOKEN-BASED ENDPOINTS ====================
+// These endpoints use session tokens instead of team IDs for security
+
+// GET /api/team/session/:sessionToken - Get team and quiz by session token (secure)
+router.get('/session/:sessionToken', async (req: Request, res: Response) => {
+  try {
+    const sessionToken = req.params.sessionToken as string;
+
+    const team = await findTeamBySessionToken(sessionToken);
+
+    if (!team) {
+      return res.status(404).json({
+        error: 'Not Found',
+        message: 'Team not found',
+      } as ErrorResponse);
+    }
+
+    // Load the quiz (without correct answers)
+    const quiz = await loadQuiz(team.quiz_code);
+
+    if (!quiz) {
+      return res.status(404).json({
+        error: 'Not Found',
+        message: 'Quiz not found',
+      } as ErrorResponse);
+    }
+
+    // Remove correct answers from questions for team view
+    const questionsWithoutAnswers = quiz.questions.map(
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      ({ correct, ...question }) => question,
+    );
+
+    res.json({
+      team,
+      quiz: {
+        code: quiz.code,
+        title: quiz.title,
+        status: quiz.status,
+        current_question_index: quiz.current_question_index,
+        created_at: quiz.created_at,
+        questions: questionsWithoutAnswers,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching team by session token:', error);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'Failed to fetch team',
+    } as ErrorResponse);
+  }
+});
+
+// POST /api/team/session/:sessionToken/answer - Submit answer by session token
+router.post('/session/:sessionToken/answer', async (req: Request, res: Response) => {
+  try {
+    const sessionToken = req.params.sessionToken as string;
+    const { question_id, answer: answerText } = req.body as SubmitAnswerRequest;
+
+    // Validate input types
+    if (typeof question_id !== 'number' || typeof answerText !== 'string') {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Invalid input format',
+      } as ErrorResponse);
+    }
+
+    if (!answerText.trim()) {
+      return res.status(400).json({
+        error: 'Validation Error',
+        message: 'Answer cannot be empty',
+      } as ErrorResponse);
+    }
+
+    const team = await findTeamBySessionToken(sessionToken);
+
+    if (!team) {
+      return res.status(404).json({
+        error: 'Not Found',
+        message: 'Team not found',
+      } as ErrorResponse);
+    }
+
+    // Load quiz
+    const quiz = await loadQuiz(team.quiz_code);
+    if (!quiz) {
+      return res.status(404).json({
+        error: 'Not Found',
+        message: 'Quiz not found',
+      } as ErrorResponse);
+    }
+
+    // Check if quiz is active
+    if (quiz.status !== 'active') {
+      return res.status(400).json({
+        error: 'Invalid State',
+        message: 'Quiz is not active',
+      } as ErrorResponse);
+    }
+
+    // Find question
+    const question = quiz.questions.find((q) => q.id === question_id);
+    if (!question) {
+      return res.status(404).json({
+        error: 'Not Found',
+        message: 'Question not found',
+      } as ErrorResponse);
+    }
+
+    // Check if answer is correct (case-insensitive comparison)
+    const isCorrect = question.correct.toLowerCase().trim() === answerText.toLowerCase().trim();
+
+    // Create answer object
+    const answer: Answer = {
+      question_id,
+      answer: answerText.trim(),
+      is_correct: isCorrect,
+      score: isCorrect ? 1 : 0,
+    };
+
+    // Update team answer
+    await updateTeamAnswer(team.id, team.quiz_code, answer);
+
+    // Load updated team to get new total score
+    const updatedTeam = await loadTeam(team.id, team.quiz_code);
+
+    res.status(200).json({
+      answer,
+      total_score: updatedTeam?.total_score || 0,
+    } as SubmitAnswerResponse);
+  } catch (error) {
+    console.error('Error submitting answer:', error);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: 'Failed to submit answer',
     } as ErrorResponse);
   }
 });

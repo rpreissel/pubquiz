@@ -241,3 +241,35 @@ export async function teamExists(teamId: string, quizCode: string): Promise<bool
     return false;
   }
 }
+
+// Token-based lookup functions
+
+export async function findQuizByMasterToken(masterToken: string): Promise<Quiz | null> {
+  try {
+    const quizzes = await getAllQuizzes();
+    return quizzes.find((quiz) => quiz.master_token === masterToken) || null;
+  } catch (error) {
+    console.error('Failed to find quiz by master token:', error);
+    return null;
+  }
+}
+
+export async function findTeamBySessionToken(sessionToken: string): Promise<Team | null> {
+  try {
+    // We need to search through all teams in all quizzes
+    const quizzes = await getAllQuizzes();
+
+    for (const quiz of quizzes) {
+      const teams = await getTeamsByQuizCode(quiz.code);
+      const team = teams.find((t) => t.session_token === sessionToken);
+      if (team) {
+        return team;
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Failed to find team by session token:', error);
+    return null;
+  }
+}

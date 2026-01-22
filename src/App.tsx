@@ -14,9 +14,10 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/quiz/create" element={<CreateQuiz />} />
         <Route path="/quiz/join" element={<TeamJoin />} />
-        <Route path="/quiz/:code/master" element={<QuizMaster />} />
-        <Route path="/quiz/:code/team/:teamId" element={<TeamQuiz />} />
-        <Route path="/quiz/:code/results" element={<Results />} />
+        {/* Token-based routes - URLs are not guessable */}
+        <Route path="/master/:masterToken" element={<QuizMaster />} />
+        <Route path="/play/:sessionToken" element={<TeamQuiz />} />
+        <Route path="/results/:masterToken" element={<Results />} />
       </Routes>
     </div>
   );

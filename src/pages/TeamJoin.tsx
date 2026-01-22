@@ -34,15 +34,14 @@ export function TeamJoin() {
     try {
       const team = await joinTeam(quizCode.trim().toUpperCase(), teamName.trim());
 
-      // Save team session
+      // Save team session with the secure token
       saveTeamSession({
-        teamId: team.id,
-        quizCode: team.quiz_code,
+        sessionToken: team.session_token,
         teamName: team.name,
       });
 
-      // Navigate to team quiz page
-      navigate(`/quiz/${team.quiz_code}/team/${team.id}`);
+      // Navigate to team quiz page using the secure token
+      navigate(`/play/${team.session_token}`);
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);

@@ -12,6 +12,7 @@ export interface Quiz {
   status: 'draft' | 'active' | 'finished';
   current_question_index: number;
   created_at: string;
+  master_token: string; // Secret token for quiz master access
 }
 
 // Team type definitions
@@ -29,6 +30,7 @@ export interface Team {
   answers: Answer[];
   total_score: number;
   joined_at: string;
+  session_token: string; // Secret token for team access
 }
 
 // QuizMaster view types

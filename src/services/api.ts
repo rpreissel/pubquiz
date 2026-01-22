@@ -36,24 +36,19 @@ export async function createQuiz(title: string, questions: Omit<Question, 'id'>[
   return data.quiz;
 }
 
-export async function getQuiz(code: string): Promise<Quiz> {
-  const response = await fetch(`${API_BASE_URL}/quiz/${code}`);
-  const data = await handleResponse<{ quiz: Quiz }>(response);
-  return data.quiz;
-}
-
-export async function getQuizMaster(
-  code: string,
+// Token-based Quiz Master API
+export async function getQuizByMasterToken(
+  masterToken: string,
 ): Promise<{ quiz: Quiz; teams: TeamAnswerStatus[] }> {
-  const response = await fetch(`${API_BASE_URL}/quiz/${code}/master`);
+  const response = await fetch(`${API_BASE_URL}/quiz/master/${masterToken}`);
   return handleResponse(response);
 }
 
-export async function updateQuizStatus(
-  code: string,
+export async function updateQuizStatusByToken(
+  masterToken: string,
   status: 'draft' | 'active' | 'finished',
 ): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/quiz/${code}/status`, {
+  const response = await fetch(`${API_BASE_URL}/quiz/master/${masterToken}/status`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status }),
@@ -62,8 +57,11 @@ export async function updateQuizStatus(
   await handleResponse(response);
 }
 
-export async function updateCurrentQuestion(code: string, questionIndex: number): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/quiz/${code}/question`, {
+export async function updateCurrentQuestionByToken(
+  masterToken: string,
+  questionIndex: number,
+): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/quiz/master/${masterToken}/question`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ questionIndex }),
@@ -72,12 +70,14 @@ export async function updateCurrentQuestion(code: string, questionIndex: number)
   await handleResponse(response);
 }
 
-export async function getQuizResults(code: string): Promise<{ quiz: Quiz; teams: Team[] }> {
-  const response = await fetch(`${API_BASE_URL}/quiz/${code}/results`);
+export async function getQuizResultsByToken(
+  masterToken: string,
+): Promise<{ quiz: Quiz; teams: Team[] }> {
+  const response = await fetch(`${API_BASE_URL}/quiz/master/${masterToken}/results`);
   return handleResponse(response);
 }
 
-// Team API
+// Team API - for joining (still uses quiz code)
 export async function joinTeam(quizCode: string, teamName: string): Promise<Team> {
   const response = await fetch(`${API_BASE_URL}/team/join`, {
     method: 'POST',
@@ -89,17 +89,23 @@ export async function joinTeam(quizCode: string, teamName: string): Promise<Team
   return data.team;
 }
 
-export async function submitAnswer(
-  teamId: string,
-  quizCode: string,
+// Token-based Team API
+export async function getTeamBySessionToken(
+  sessionToken: string,
+): Promise<{ team: Team; quiz: Omit<Quiz, 'master_token'> }> {
+  const response = await fetch(`${API_BASE_URL}/team/session/${sessionToken}`);
+  return handleResponse(response);
+}
+
+export async function submitAnswerByToken(
+  sessionToken: string,
   questionId: number,
   answer: string,
 ): Promise<{ answer: Answer; total_score: number }> {
-  const response = await fetch(`${API_BASE_URL}/team/${teamId}/answer`, {
+  const response = await fetch(`${API_BASE_URL}/team/session/${sessionToken}/answer`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      quiz_code: quizCode,
       question_id: questionId,
       answer,
     }),
@@ -108,12 +114,7 @@ export async function submitAnswer(
   return handleResponse(response);
 }
 
-export async function getTeam(teamId: string, quizCode: string): Promise<Team> {
-  const response = await fetch(`${API_BASE_URL}/team/${teamId}?quiz_code=${quizCode}`);
-  const data = await handleResponse<{ team: Team }>(response);
-  return data.team;
-}
-
+// Score update (still uses team ID + quiz code for now, called from results page)
 export async function updateAnswerScore(
   teamId: string,
   quizCode: string,

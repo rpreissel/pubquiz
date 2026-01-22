@@ -6,6 +6,7 @@ import { Button } from '../components/Button';
 import { QuestionForm } from '../components/QuestionForm';
 import { Card } from '../components/Card';
 import { createQuiz } from '../services/api';
+import { saveMasterSession } from '../utils/storage';
 import { parseCSV, downloadCSVTemplate } from '../utils/csv';
 import './CreateQuiz.css';
 
@@ -65,7 +66,16 @@ export function CreateQuiz() {
 
     try {
       const quiz = await createQuiz(title.trim(), questions);
-      navigate(`/quiz/${quiz.code}/master`);
+
+      // Save master session for later access
+      saveMasterSession({
+        masterToken: quiz.master_token,
+        quizCode: quiz.code,
+        quizTitle: quiz.title,
+      });
+
+      // Navigate to master page using the secure token
+      navigate(`/master/${quiz.master_token}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Fehler beim Erstellen des Quiz');
     } finally {
