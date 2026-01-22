@@ -94,17 +94,21 @@ export function CreateQuiz() {
 
           <div className="csv-section">
             <div className="csv-actions">
-              <label className="csv-upload-button">
-                <input
-                  type="file"
-                  accept=".csv"
-                  onChange={handleCSVUpload}
-                  style={{ display: 'none' }}
-                />
-                <Button type="button" variant="secondary" fullWidth>
-                  📄 CSV importieren
-                </Button>
-              </label>
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleCSVUpload}
+                style={{ display: 'none' }}
+                id="csv-upload-input"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                fullWidth
+                onClick={() => document.getElementById('csv-upload-input')?.click()}
+              >
+                📄 CSV importieren
+              </Button>
               <Button type="button" variant="secondary" fullWidth onClick={downloadCSVTemplate}>
                 ⬇ Template herunterladen
               </Button>
