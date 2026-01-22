@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "concurrently \"npm run dev:server\" \"npm run dev\" --names \"backend,frontend\" --prefix-colors \"cyan,magenta\"",
     "dev": "vite",
     "dev:server": "nodemon --watch backend --exec tsx backend/server.ts",
     "build": "tsc && vite build",
@@ -40,6 +41,7 @@
     "@typescript-eslint/eslint-plugin": "^8.53.1",
     "@typescript-eslint/parser": "^8.53.1",
     "@vitest/ui": "^4.0.17",
+    "concurrently": "^9.2.1",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react": "^7.37.5",

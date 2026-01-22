@@ -1,0 +1,71 @@
+.home {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.home-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  color: white;
+}
+
+.home-title {
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.home-subtitle {
+  font-size: 1.25rem;
+  opacity: 0.9;
+}
+
+.home-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  max-width: 800px;
+  width: 100%;
+}
+
+.home-option-card {
+  text-align: center;
+  padding: 2rem;
+}
+
+.option-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  color: #111827;
+}
+
+.option-description {
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .home {
+    padding: 1.5rem;
+  }
+
+  .home-title {
+    font-size: 2.25rem;
+  }
+
+  .home-subtitle {
+    font-size: 1.125rem;
+  }
+
+  .home-options {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
