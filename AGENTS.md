@@ -2,38 +2,53 @@
 
 ## Project Overview
 
-A simple Pub Quiz web application where Quiz Masters create quizzes and teams answer questions sequentially. Built with React + TypeScript frontend and Node.js + Express backend with filesystem-based data storage.
+A simple Pub Quiz web application where Quiz Masters create quizzes and teams answer questions sequentially. Features token-based security, free-text answers with automatic scoring, and manual score adjustments.
 
 **Tech Stack:**
-- Frontend: React + TypeScript + Vite
-- Backend: Node.js + Express
-- Database: Filesystem (JSON files)
+
+- Frontend: React 19 + TypeScript + Vite 7
+- Backend: Node.js 18+ + Express 5
+- Storage: Filesystem (JSON files)
 - Testing: Vitest + React Testing Library
-- Linting: ESLint + Prettier
+- Linting: ESLint 9 + Prettier 3
 - Deployment: fly.io
+
+**Key Features:**
+
+- Token-based security (Master-Token for Quiz Master, Session-Token for Teams)
+- Free-text answers with automatic case-insensitive validation
+- Manual score adjustment (0, 0.5, 1 points)
+- CSV import for questions
+- Polling-based updates (no WebSockets needed)
+- Mobile-first responsive design
 
 ---
 
 ## Development Commands
 
 ### Installation
+
 ```bash
 npm install
 ```
 
 ### Development
+
 ```bash
-npm run dev          # Start development server (Vite)
-npm run dev:server   # Start backend server
+npm run start        # Start frontend + backend concurrently (recommended)
+npm run dev          # Start frontend only (Vite)
+npm run dev:server   # Start backend only (nodemon + tsx)
 ```
 
 ### Build
+
 ```bash
 npm run build        # Build for production
 npm run preview      # Preview production build
 ```
 
 ### Linting & Formatting
+
 ```bash
 npm run lint         # Run ESLint
 npm run lint:fix     # Auto-fix ESLint issues
@@ -42,6 +57,7 @@ npm run format:check # Check formatting without changes
 ```
 
 ### Testing
+
 ```bash
 npm test                           # Run all tests
 npm test -- <filename>             # Run single test file
@@ -51,6 +67,7 @@ npm test -- <filename> --watch     # Watch mode for single test
 ```
 
 **Examples:**
+
 ```bash
 npm test -- QuizMaster.test.tsx           # Test specific component
 npm test -- src/utils/scoring.test.ts     # Test specific utility
@@ -61,6 +78,7 @@ npm test -- src/utils/scoring.test.ts     # Test specific utility
 ## Code Style & Formatting
 
 ### General Rules
+
 - **Line length:** Max 100 characters
 - **Indentation:** 2 spaces (no tabs)
 - **Quotes:** Single quotes for strings (except JSX attributes)
@@ -68,9 +86,11 @@ npm test -- src/utils/scoring.test.ts     # Test specific utility
 - **Trailing commas:** Always in multiline
 
 ### Prettier Configuration
+
 All code must be formatted with Prettier. Run `npm run format` before committing.
 
 ### ESLint
+
 - Follow all ESLint rules in `.eslintrc.json`
 - Fix warnings and errors before committing
 - Use `npm run lint:fix` for auto-fixable issues
@@ -80,11 +100,13 @@ All code must be formatted with Prettier. Run `npm run format` before committing
 ## TypeScript Guidelines
 
 ### Strict Mode
+
 - TypeScript strict mode is enabled
 - No implicit `any` types
 - All function parameters and return types must be explicitly typed
 
 ### Type Definitions
+
 ```typescript
 // ✅ Good - Explicit types
 interface Quiz {
@@ -92,7 +114,15 @@ interface Quiz {
   title: string;
   questions: Question[];
   status: 'draft' | 'active' | 'finished';
+  current_question_index: number;
   created_at: string;
+  master_token: string; // Secret token for quiz master access
+}
+
+interface Question {
+  id: number;
+  text: string;
+  correct: string; // Free-text answer (not multiple choice)
 }
 
 // ❌ Bad - Implicit any
@@ -107,70 +137,35 @@ function processQuiz(quiz: Quiz): Question[] {
 ```
 
 ### Utility Types
+
 Prefer TypeScript utility types where appropriate:
+
 - `Partial<T>`, `Required<T>`, `Pick<T, K>`, `Omit<T, K>`
 - `Record<K, V>` for object maps
 
 ---
 
-## Import Conventions
-
-### Import Order
-1. React and React-related imports
-2. External library imports (alphabetical)
-3. Internal type imports
-4. Internal component imports
-5. Internal utility/helper imports
-6. Styles
-
-```typescript
-// ✅ Good
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-
-import type { Quiz, Team } from '../types';
-import { QuizCard } from '../components/QuizCard';
-import { calculateScore } from '../utils/scoring';
-import './QuizMaster.css';
-```
-
-### Import Style
-- Use named imports for utilities and components
-- Avoid default exports except for pages/routes
-- Use barrel exports (`index.ts`) for cleaner imports
-
----
-
 ## Naming Conventions
 
-### Components
 - **PascalCase** for components: `QuizMaster.tsx`, `TeamJoin.tsx`
 - **camelCase** for hooks: `useQuizState.ts`, `useTeamAnswers.ts`
-
-### Variables & Functions
 - **camelCase** for variables and functions: `quizCode`, `handleSubmit()`
 - **UPPER_SNAKE_CASE** for constants: `MAX_TEAMS`, `API_BASE_URL`
+- **Boolean prefixes:** `is`, `has`, `should` (e.g. `isActive`, `hasAnswered`)
 
 ### Files
+
 - Components: `ComponentName.tsx`
 - Utilities: `utilityName.ts`
 - Types: `types.ts` or `ComponentName.types.ts`
 - Tests: `ComponentName.test.tsx` or `utilityName.test.ts`
-
-### Boolean Variables
-Use `is`, `has`, `should` prefixes:
-```typescript
-const isActive = quiz.status === 'active';
-const hasAnswered = team.answers.length > 0;
-const shouldShowResults = currentQuestion === totalQuestions;
-```
 
 ---
 
 ## Error Handling
 
 ### Async/Await Pattern
+
 Always use try-catch for async operations:
 
 ```typescript
@@ -196,6 +191,7 @@ async function loadQuiz(code: string) {
 ```
 
 ### User-Facing Errors
+
 - Display user-friendly error messages
 - Log detailed errors to console
 - Use toast/notification for temporary errors
@@ -205,6 +201,7 @@ async function loadQuiz(code: string) {
 ## React Component Patterns
 
 ### Functional Components
+
 Use functional components with hooks:
 
 ```typescript
@@ -225,11 +222,13 @@ export function QuizCard({ quiz, onSelect }: QuizCardProps) {
 ```
 
 ### State Management
+
 - Use `useState` for local component state
 - Use Context API for shared state (quiz state, team info)
 - Keep state as close to usage as possible
 
 ### Hooks Rules
+
 - Custom hooks must start with `use`
 - Only call hooks at top level
 - Extract complex logic into custom hooks
@@ -239,6 +238,7 @@ export function QuizCard({ quiz, onSelect }: QuizCardProps) {
 ## Backend/API Conventions
 
 ### File Structure
+
 ```
 backend/
 ├── server.ts          # Express app setup
@@ -246,13 +246,16 @@ backend/
 │   ├── quiz.ts        # Quiz-related endpoints
 │   └── team.ts        # Team-related endpoints
 ├── utils/
-│   └── storage.ts     # Filesystem operations
+│   ├── storage.ts     # Filesystem operations
+│   └── validation.ts  # Input validation
 └── types/
     └── api.ts         # API types
 ```
 
 ### Filesystem Storage
+
 All data stored as JSON files in `data/` directory:
+
 - Quizzes: `data/quizzes/{code}.json`
 - Teams: `data/teams/{quizCode}/{teamId}.json`
 
@@ -265,22 +268,27 @@ export async function saveQuiz(quiz: Quiz): Promise<void> {
 ```
 
 ### API Endpoints
-Follow RESTful conventions:
-- `POST /api/quiz/create` - Create new quiz
-- `GET /api/quiz/:code` - Get quiz by code
-- `POST /api/team/join` - Team joins quiz
-- `POST /api/team/:teamId/answer` - Submit answer
-- `GET /api/quiz/:code/results` - Get final results
+
+Follow RESTful conventions. See `backend/routes/quiz.ts` and `backend/routes/team.ts` for all endpoints.
+For detailed API documentation, see `anforderungen.md` section 5.
+
+**Key principles:**
+
+- Use token-based endpoints for sensitive operations (master_token, session_token)
+- Validate all inputs on backend
+- Return proper HTTP status codes (200, 201, 400, 404, 500)
 
 ---
 
 ## Testing Guidelines
 
 ### Test File Location
+
 - Place tests next to source files: `Component.test.tsx`
 - Or in `__tests__` directory
 
 ### Testing Pattern
+
 ```typescript
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
@@ -297,7 +305,7 @@ describe('QuizCard', () => {
     const onSelect = vi.fn();
     const quiz = { code: 'TEST123', title: 'Test Quiz', questions: [] };
     render(<QuizCard quiz={quiz} onSelect={onSelect} />);
-    
+
     fireEvent.click(screen.getByText('Test Quiz'));
     expect(onSelect).toHaveBeenCalledWith('TEST123');
   });
@@ -305,26 +313,52 @@ describe('QuizCard', () => {
 ```
 
 ### Test Coverage
+
 - Aim for >80% coverage on utilities
 - Test user interactions in components
 - Test error states and edge cases
 
 ---
 
-## Git Workflow
-
-- Create feature branches: `feature/quiz-creation`, `fix/team-join-bug`
-- Write clear commit messages: "Add quiz creation form", "Fix team join validation"
-- Run lint and tests before committing
-- Keep commits focused and atomic
-
----
-
 ## Notes for AI Agents
 
+### General Principles
+
 - This is a simple MVP - avoid over-engineering
-- No real-time features (WebSockets) - use simple HTTP polling if needed
+- No real-time features (WebSockets) - use simple HTTP polling
 - Mobile-first responsive design
-- German language in UI (based on requirements document)
 - Focus on functionality over fancy animations
 - Data persistence is filesystem-based, not a database
+
+### Security Model
+
+- Quiz Master gets a `master_token` (UUID) when creating a quiz - this is SECRET
+- Teams get a `session_token` (UUID) when joining - this is SECRET
+- Quiz codes are public (for joining only, not for control)
+- Always use token-based endpoints for sensitive operations
+
+### Answer System
+
+- Questions have free-text answers (not multiple choice)
+- Automatic scoring: case-insensitive string comparison
+- Quiz Master can manually adjust scores to 0, 0.5, or 1 point
+- `total_score` is calculated by summing all `answer.score` values
+
+### Quiz Flow
+
+- Status transitions: `draft` → `active` → `finished`
+- Quiz Master controls `current_question_index` to navigate questions
+- Teams poll for updates (no WebSocket needed)
+- Previous answers are locked when moving to next question
+
+### CSV Import
+
+- Format: `text,correct` (columns)
+- Parser handles quotes and multiline values
+- See `src/utils/csv.ts` for implementation
+
+### Validation
+
+- Team names must be unique per quiz (case-insensitive)
+- Quiz codes are 6 characters, uppercase alphanumeric
+- All inputs are validated on backend (see `backend/utils/validation.ts`)
