@@ -165,3 +165,16 @@ data class GetTeamBySessionResponse(
     val team: Team,
     val quiz: QuizWithoutAnswers
 )
+
+@Serializable
+data class QuizStatistics(
+    @SerialName("quiz_code") val quizCode: String,
+    val title: String,
+    val status: QuizStatus,
+    @SerialName("total_questions") val totalQuestions: Int,
+    @SerialName("total_teams") val totalTeams: Int,
+    @SerialName("current_question_index") val currentQuestionIndex: Int,
+    @SerialName("average_score") val averageScore: Double,
+    @SerialName("highest_score") val highestScore: Double,
+    @SerialName("lowest_score") val lowestScore: Double
+)

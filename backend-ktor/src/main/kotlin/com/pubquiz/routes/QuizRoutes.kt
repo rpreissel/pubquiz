@@ -158,6 +158,24 @@ fun Route.quizRoutes() {
             call.respond(QuizResultsResponse(quiz, sortedTeams))
         }
         
+        // GET /api/quiz/:code/statistics - Get quiz statistics
+        get("/{code}/statistics") {
+            val code = call.parameters["code"] ?: throw IllegalArgumentException("Missing quiz code")
+            
+            if (!Validation.validateQuizCode(code)) {
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    ErrorResponse("Validation Error", "Invalid quiz code format")
+                )
+                return@get
+            }
+            
+            val statistics = FileStorage.getQuizStatistics(code)
+                ?: throw NoSuchElementException("Quiz not found")
+            
+            call.respond(statistics)
+        }
+        
         // PATCH /api/quiz/:code/status - Update quiz status
         patch("/{code}/status") {
             val code = call.parameters["code"] ?: throw IllegalArgumentException("Missing quiz code")

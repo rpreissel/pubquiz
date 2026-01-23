@@ -261,4 +261,31 @@ object FileStorage {
             null
         }
     }
+    
+    // Statistics and helper functions
+    fun getQuizStatistics(code: String): QuizStatistics? {
+        return try {
+            val quiz = loadQuiz(code) ?: return null
+            val teams = getTeamsByQuizCode(code)
+            
+            QuizStatistics(
+                quizCode = quiz.code,
+                title = quiz.title,
+                status = quiz.status,
+                totalQuestions = quiz.questions.size,
+                totalTeams = teams.size,
+                currentQuestionIndex = quiz.currentQuestionIndex,
+                averageScore = if (teams.isNotEmpty()) {
+                    teams.map { it.totalScore }.average()
+                } else {
+                    0.0
+                },
+                highestScore = teams.maxOfOrNull { it.totalScore } ?: 0.0,
+                lowestScore = teams.minOfOrNull { it.totalScore } ?: 0.0
+            )
+        } catch (e: Exception) {
+            logger.error("Failed to get quiz statistics for $code: ${e.message}", e)
+            null
+        }
+    }
 }
