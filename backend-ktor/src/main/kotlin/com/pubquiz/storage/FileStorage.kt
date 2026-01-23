@@ -3,12 +3,13 @@ package com.pubquiz.storage
 import com.pubquiz.models.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import java.io.File
+import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.*
 
 object FileStorage {
+    private val logger = LoggerFactory.getLogger(FileStorage::class.java)
     private val dataDir = Path("data")
     private val quizzesDir = dataDir.resolve("quizzes")
     private val teamsDir = dataDir.resolve("teams")
@@ -23,8 +24,9 @@ object FileStorage {
         try {
             Files.createDirectories(quizzesDir)
             Files.createDirectories(teamsDir)
+            logger.info("Data directories initialized: $dataDir")
         } catch (e: Exception) {
-            println("Failed to create data directories: ${e.message}")
+            logger.error("Failed to create data directories: ${e.message}", e)
             throw e
         }
     }
@@ -35,8 +37,9 @@ object FileStorage {
             val filePath = quizzesDir.resolve("${quiz.code}.json")
             val jsonString = json.encodeToString(quiz)
             filePath.writeText(jsonString, Charsets.UTF_8)
+            logger.debug("Quiz ${quiz.code} saved successfully")
         } catch (e: Exception) {
-            println("Failed to save quiz ${quiz.code}: ${e.message}")
+            logger.error("Failed to save quiz ${quiz.code}: ${e.message}", e)
             throw e
         }
     }
@@ -50,7 +53,7 @@ object FileStorage {
             val jsonString = filePath.readText(Charsets.UTF_8)
             json.decodeFromString<Quiz>(jsonString)
         } catch (e: Exception) {
-            println("Failed to load quiz $code: ${e.message}")
+            logger.error("Failed to load quiz $code: ${e.message}", e)
             throw e
         }
     }
@@ -70,7 +73,7 @@ object FileStorage {
                 .toList()
                 .sortedByDescending { it.createdAt }
         } catch (e: Exception) {
-            println("Failed to load all quizzes: ${e.message}")
+            logger.error("Failed to load all quizzes: ${e.message}", e)
             throw e
         }
     }
@@ -80,8 +83,9 @@ object FileStorage {
             val quiz = loadQuiz(code) ?: throw IllegalArgumentException("Quiz $code not found")
             val updatedQuiz = quiz.copy(status = status)
             saveQuiz(updatedQuiz)
+            logger.info("Quiz $code status updated to $status")
         } catch (e: Exception) {
-            println("Failed to update quiz $code status: ${e.message}")
+            logger.error("Failed to update quiz $code status: ${e.message}", e)
             throw e
         }
     }
@@ -95,8 +99,9 @@ object FileStorage {
             val quiz = loadQuiz(code) ?: throw IllegalArgumentException("Quiz $code not found")
             val updatedQuiz = quiz.copy(currentQuestionIndex = questionIndex)
             saveQuiz(updatedQuiz)
+            logger.info("Quiz $code current question updated to index $questionIndex")
         } catch (e: Exception) {
-            println("Failed to update current question for quiz $code: ${e.message}")
+            logger.error("Failed to update current question for quiz $code: ${e.message}", e)
             throw e
         }
     }
@@ -110,8 +115,9 @@ object FileStorage {
             val filePath = quizTeamsDir.resolve("${team.id}.json")
             val jsonString = json.encodeToString(team)
             filePath.writeText(jsonString, Charsets.UTF_8)
+            logger.debug("Team ${team.id} saved successfully for quiz ${team.quizCode}")
         } catch (e: Exception) {
-            println("Failed to save team ${team.id}: ${e.message}")
+            logger.error("Failed to save team ${team.id}: ${e.message}", e)
             throw e
         }
     }
@@ -125,7 +131,7 @@ object FileStorage {
             val jsonString = filePath.readText(Charsets.UTF_8)
             json.decodeFromString<Team>(jsonString)
         } catch (e: Exception) {
-            println("Failed to load team $teamId: ${e.message}")
+            logger.error("Failed to load team $teamId: ${e.message}", e)
             throw e
         }
     }
@@ -147,7 +153,7 @@ object FileStorage {
                 .toList()
                 .sortedBy { it.joinedAt }
         } catch (e: Exception) {
-            println("Failed to load teams for quiz $quizCode: ${e.message}")
+            logger.error("Failed to load teams for quiz $quizCode: ${e.message}", e)
             throw e
         }
     }
@@ -176,8 +182,9 @@ object FileStorage {
             )
             
             saveTeam(updatedTeam)
+            logger.debug("Team $teamId answer updated for question ${answer.questionId}")
         } catch (e: Exception) {
-            println("Failed to update team $teamId answer: ${e.message}")
+            logger.error("Failed to update team $teamId answer: ${e.message}", e)
             throw e
         }
     }
@@ -213,9 +220,10 @@ object FileStorage {
             )
             
             saveTeam(updatedTeam)
+            logger.info("Answer score updated for team $teamId, question $questionId: $score")
             return updatedTeam
         } catch (e: Exception) {
-            println("Failed to update answer score for team $teamId: ${e.message}")
+            logger.error("Failed to update answer score for team $teamId: ${e.message}", e)
             throw e
         }
     }
@@ -230,7 +238,7 @@ object FileStorage {
             val quizzes = getAllQuizzes()
             quizzes.find { it.masterToken == masterToken }
         } catch (e: Exception) {
-            println("Failed to find quiz by master token: ${e.message}")
+            logger.error("Failed to find quiz by master token: ${e.message}", e)
             null
         }
     }
@@ -249,7 +257,7 @@ object FileStorage {
             
             null
         } catch (e: Exception) {
-            println("Failed to find team by session token: ${e.message}")
+            logger.error("Failed to find team by session token: ${e.message}", e)
             null
         }
     }

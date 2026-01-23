@@ -88,7 +88,8 @@ fun Route.teamRoutes() {
                 return@post
             }
             
-            val team = FileStorage.loadTeam(teamId, quizCode)
+            // Verify team exists
+            FileStorage.loadTeam(teamId, quizCode)
                 ?: throw NoSuchElementException("Team not found")
             
             // Load quiz

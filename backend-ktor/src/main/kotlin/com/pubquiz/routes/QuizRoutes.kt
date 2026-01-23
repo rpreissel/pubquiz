@@ -171,7 +171,8 @@ fun Route.quizRoutes() {
                 return@patch
             }
             
-            val quiz = FileStorage.loadQuiz(code)
+            // Verify quiz exists
+            FileStorage.loadQuiz(code)
                 ?: throw NoSuchElementException("Quiz not found")
             
             FileStorage.updateQuizStatus(code, request.status)
