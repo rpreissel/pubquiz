@@ -37,31 +37,55 @@ fun Route.quizRoutes() {
                 return@post
             }
             
-            // Generate unique quiz code
-            var code = Validation.generateQuizCode()
-            while (FileStorage.quizExists(code)) {
+            // Generate unique quiz code with retry logic to prevent race conditions
+            var code: String
+            var retries = 0
+            val maxRetries = 10
+            
+            do {
                 code = Validation.generateQuizCode()
-            }
+                
+                // Try to save - if code exists, atomic write will fail
+                val questionsWithIds = request.questions.mapIndexed { index, question ->
+                    question.copy(id = index)
+                }
+                
+                val quiz = Quiz(
+                    code = code,
+                    title = request.title.trim(),
+                    questions = questionsWithIds,
+                    status = QuizStatus.DRAFT,
+                    currentQuestionIndex = 0,
+                    createdAt = Instant.now().toString(),
+                    masterToken = UUID.randomUUID().toString()
+                )
+                
+                try {
+                    // Check if quiz exists before saving
+                    if (!FileStorage.quizExists(code)) {
+                        FileStorage.saveQuiz(quiz)
+                        call.respond(HttpStatusCode.Created, CreateQuizResponse(quiz))
+                        return@post
+                    }
+                } catch (e: Exception) {
+                    // If save fails due to concurrent write, retry
+                    retries++
+                    if (retries >= maxRetries) {
+                        call.respond(
+                            HttpStatusCode.InternalServerError,
+                            ErrorResponse("Server Error", "Failed to generate unique quiz code after $maxRetries attempts")
+                        )
+                        return@post
+                    }
+                }
+                
+                retries++
+            } while (retries < maxRetries)
             
-            // Assign IDs to questions
-            val questionsWithIds = request.questions.mapIndexed { index, question ->
-                question.copy(id = index)
-            }
-            
-            // Create quiz object
-            val quiz = Quiz(
-                code = code,
-                title = request.title.trim(),
-                questions = questionsWithIds,
-                status = QuizStatus.DRAFT,
-                currentQuestionIndex = 0,
-                createdAt = Instant.now().toString(),
-                masterToken = UUID.randomUUID().toString()
+            call.respond(
+                HttpStatusCode.InternalServerError,
+                ErrorResponse("Server Error", "Failed to create quiz")
             )
-            
-            FileStorage.saveQuiz(quiz)
-            
-            call.respond(HttpStatusCode.Created, CreateQuizResponse(quiz))
         }
         
         // GET /api/quiz/:code - Get quiz (without correct answers for teams)

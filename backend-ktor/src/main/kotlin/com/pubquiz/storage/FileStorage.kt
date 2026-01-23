@@ -36,8 +36,8 @@ object FileStorage {
         try {
             val filePath = quizzesDir.resolve("${quiz.code}.json")
             val jsonString = json.encodeToString(quiz)
-            filePath.writeText(jsonString, Charsets.UTF_8)
-            logger.debug("Quiz ${quiz.code} saved successfully")
+            AtomicFileWriter.writeAtomic(filePath, jsonString)
+            logger.debug("Quiz ${quiz.code} saved successfully (atomic write)")
         } catch (e: Exception) {
             logger.error("Failed to save quiz ${quiz.code}: ${e.message}", e)
             throw e
@@ -50,8 +50,9 @@ object FileStorage {
             if (!filePath.exists()) {
                 return null
             }
-            val jsonString = filePath.readText(Charsets.UTF_8)
-            json.decodeFromString<Quiz>(jsonString)
+            AtomicFileWriter.readWithLock(filePath) { content ->
+                json.decodeFromString<Quiz>(content)
+            }
         } catch (e: Exception) {
             logger.error("Failed to load quiz $code: ${e.message}", e)
             throw e
@@ -114,8 +115,8 @@ object FileStorage {
             
             val filePath = quizTeamsDir.resolve("${team.id}.json")
             val jsonString = json.encodeToString(team)
-            filePath.writeText(jsonString, Charsets.UTF_8)
-            logger.debug("Team ${team.id} saved successfully for quiz ${team.quizCode}")
+            AtomicFileWriter.writeAtomic(filePath, jsonString)
+            logger.debug("Team ${team.id} saved successfully for quiz ${team.quizCode} (atomic write)")
         } catch (e: Exception) {
             logger.error("Failed to save team ${team.id}: ${e.message}", e)
             throw e
@@ -128,8 +129,9 @@ object FileStorage {
             if (!filePath.exists()) {
                 return null
             }
-            val jsonString = filePath.readText(Charsets.UTF_8)
-            json.decodeFromString<Team>(jsonString)
+            AtomicFileWriter.readWithLock(filePath) { content ->
+                json.decodeFromString<Team>(content)
+            }
         } catch (e: Exception) {
             logger.error("Failed to load team $teamId: ${e.message}", e)
             throw e

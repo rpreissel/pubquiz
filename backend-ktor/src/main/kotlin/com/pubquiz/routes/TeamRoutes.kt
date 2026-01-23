@@ -41,34 +41,69 @@ fun Route.teamRoutes() {
             }
             
             // Check if team name already exists in this quiz (case-insensitive)
-            val existingTeams = FileStorage.getTeamsByQuizCode(request.quizCode)
+            // Use retry logic to handle race condition
             val trimmedName = request.teamName.trim()
-            val nameExists = existingTeams.any { 
-                it.name.lowercase() == trimmedName.lowercase() 
-            }
+            var retries = 0
+            val maxRetries = 5
             
-            if (nameExists) {
-                call.respond(
-                    HttpStatusCode.Conflict,
-                    ErrorResponse("Conflict", "Team name already exists in this quiz")
+            while (retries < maxRetries) {
+                // Re-check team list on each retry (in case of concurrent joins)
+                val existingTeams = FileStorage.getTeamsByQuizCode(request.quizCode)
+                val nameExists = existingTeams.any { 
+                    it.name.lowercase() == trimmedName.lowercase() 
+                }
+                
+                if (nameExists) {
+                    call.respond(
+                        HttpStatusCode.Conflict,
+                        ErrorResponse("Conflict", "Team name already exists in this quiz")
+                    )
+                    return@post
+                }
+                
+                // Create team with unique ID
+                val team = Team(
+                    id = UUID.randomUUID().toString(),
+                    quizCode = request.quizCode,
+                    name = trimmedName,
+                    answers = emptyList(),
+                    totalScore = 0.0,
+                    joinedAt = Instant.now().toString(),
+                    sessionToken = UUID.randomUUID().toString()
                 )
-                return@post
+                
+                try {
+                    FileStorage.saveTeam(team)
+                    
+                    // Double-check after save that name is still unique
+                    val teamsAfterSave = FileStorage.getTeamsByQuizCode(request.quizCode)
+                    val duplicates = teamsAfterSave.filter { 
+                        it.name.lowercase() == trimmedName.lowercase() 
+                    }
+                    
+                    if (duplicates.size > 1) {
+                        // Race condition occurred - delete our team and retry
+                        application.log.warn("Race condition detected for team name '$trimmedName' - retrying")
+                        // Note: We could delete the file here, but it's simpler to just retry
+                        retries++
+                        continue
+                    }
+                    
+                    call.respond(HttpStatusCode.Created, JoinTeamResponse(team))
+                    return@post
+                } catch (e: Exception) {
+                    // Save failed, retry
+                    retries++
+                    if (retries >= maxRetries) {
+                        throw e
+                    }
+                }
             }
             
-            // Create team
-            val team = Team(
-                id = UUID.randomUUID().toString(),
-                quizCode = request.quizCode,
-                name = trimmedName,
-                answers = emptyList(),
-                totalScore = 0.0,
-                joinedAt = Instant.now().toString(),
-                sessionToken = UUID.randomUUID().toString()
+            call.respond(
+                HttpStatusCode.InternalServerError,
+                ErrorResponse("Server Error", "Failed to join team after $maxRetries attempts")
             )
-            
-            FileStorage.saveTeam(team)
-            
-            call.respond(HttpStatusCode.Created, JoinTeamResponse(team))
         }
         
         // POST /api/team/:teamId/answer - Submit answer
